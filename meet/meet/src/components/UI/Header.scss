@@ -1,0 +1,44 @@
+.header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 20px;
+    box-sizing: border-box;
+    border: 5px solid green;
+    background:rgba(180, 233, 216, 0.637);
+    border-radius: 10px;
+    .logo {
+        display: flex;
+        align-items: center;
+        width: 124px;
+        img{
+            width: 100%;
+            margin-right: 10px;
+        }
+        .app-name{
+            font-size: 30px;
+            font-weight: bold;
+            padding-left: 4px;
+            color: rgb(4, 107, 75);
+        }
+    }
+
+    .action-btn {
+        display: flex;
+        align-items: center;
+        .icon-block{
+            font-size: 40px;
+            padding: 20px;
+            color: rgb(4, 107, 75);
+        }
+
+        .sign-out {
+            font-size: 40px;
+            padding: 20px;
+            color: rgb(4, 107, 75);
+            &:hover {
+                color: rgb(237, 100, 85);
+            }
+        }
+    }
+}

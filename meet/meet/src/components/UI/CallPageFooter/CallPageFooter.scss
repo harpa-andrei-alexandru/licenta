@@ -1,0 +1,100 @@
+.footer-item{
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 90px;
+    background: white;
+    z-index: 1;
+    border-radius: 5px;
+    .left-item{
+        display: flex;
+        align-items: center;
+        height: 100%;
+        width: 350px;
+        .icon-block{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 0 20px;
+
+        }
+    }
+    .center-item {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+        .icon-block{
+            background: white;
+            border: 1px solid rgb(4, 107, 75);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 10px;
+            .icon{
+                color: rgb(4, 107, 75);
+                font-size: 20px;
+                &.red{
+                    color: rgb(187, 48, 48);
+                }
+            }
+            &:hover{
+                cursor: pointer;
+                box-shadow: 0 0 20px rgb(155, 226, 204);
+            }
+            &.red-bg{
+                background: rgb(187, 48, 48);
+                .icon{
+                    color: white;
+                }
+
+            }
+        }
+    }
+
+    .right-item{
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        height: 100%;
+        width: 340px;
+        .icon-block{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            height: 100%;
+            width: 146px;
+            color: rgb(4, 107, 75);
+            .icon{
+                font-size: 20px;
+                margin-top: 10px;
+            }
+            .title{
+                margin: 0;
+                font-size: 14px;
+                font-weight: 500;
+            }
+            &:hover{
+                cursor: pointer;
+                background: rgb(205, 233, 224);
+                border-radius: 30px;
+            }
+            &.red-bg{
+                .icon{
+                    color: red;
+                }
+
+            }
+        }
+    }
+}

@@ -1,0 +1,119 @@
+.messenger-container{
+    margin-top: 0.5rem;
+    background: white;
+    height: 95%;
+    width: 500px;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: space-between;
+    flex-direction: column;
+    border-radius: 10px;
+    .messenger-header{
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 10px 0;
+        h3{
+            margin: 0;
+            font-weight: 400;
+        }
+        .icon{
+            cursor: pointer;
+            font-size: 20px;
+        }
+    }
+    .messenger-header-tabs{
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid rgb(4, 107, 75);
+        border-radius: 20px;
+        .tab{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            color:rgb(4, 107, 75);
+            p{
+                margin-left: 10px;
+            }
+            &.active{
+                border-bottom: 2px solid rgb(4, 107, 75);
+                color: rgb(92, 233, 188)
+            }
+            &:hover {
+                cursor: pointer;
+                background: rgb(205, 233, 224);
+                border-radius: 20px;
+            }
+        }
+    }
+
+    .chat-section{
+        padding: 20px;
+        flex: 1;
+        overflow-y: scroll;
+        &::-webkit-scrollbar {
+            width: 12px;
+        }
+        &::-webkit-scrollbar-thumb {
+            background: rgb(133, 131, 131);
+            border-radius: 50rem;
+        }
+        &::-webkit-scrollbar-track {
+            background-color: white;
+        }
+        .chat-block {
+            margin-bottom: 30px;
+            .sender{
+                font-size: 14px;
+                .small {
+                    margin-left: 5px;
+                }
+            }
+            .msg{
+                margin: 0;
+                padding-top: 5px;
+                color: rgb(8, 74, 80);
+                font-size: 14px;
+            }
+        }
+    }
+
+    .send-msg-section {
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        textarea {
+            resize: none;
+            width: 90%;
+            border: none;
+            border-radius: 7px;
+            height: 90%;
+            background-color: rgb(205, 233, 224);
+
+            &::-webkit-scrollbar {
+                width: 7px;
+            }
+            &::-webkit-scrollbar-thumb {
+                background: rgb(133, 131, 131);
+                border-radius: 50rem;
+            }
+            &::-webkit-scrollbar-track {
+                background-color: rgb(205, 233, 224);
+                border-radius: 7px;
+            }
+        }
+        .icon {
+            cursor: pointer;
+            &:hover {
+                color: rgb(92, 233, 188)
+            }
+        }
+    }
+}
+
+.hide{
+    display: none !important;
+}
