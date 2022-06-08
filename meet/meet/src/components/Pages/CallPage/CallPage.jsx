@@ -15,8 +15,8 @@ import { SocketContext } from '../../Context/SocketContext';
 
 
 const videoConstraints = {
-    height: window.innerHeight / 1.2,
-    width: window.innerWidth / 1.2
+    height: window.innerHeight / 4,
+    width: window.innerWidth / 4
 };
 
 const shareScreenConstraints = {
@@ -35,7 +35,7 @@ const CallPage = () => {
     const userStream = useRef();
     const peersRef = useRef([]);
     const socket = useRef();
-    const roomID = useParams();
+    const {roomID} = useParams();
     const navigate = useNavigate();
 
     const { setSocket } = useContext(SocketContext);
@@ -190,10 +190,6 @@ const CallPage = () => {
         navigate("/home");
     }
 
-    const createRoom = () => {
-        socket.current.emit("create-whiteboard", {roomID});
-    }
-
     const shareScreen = () => {
 
         if(!screenShareSwitch) {
@@ -234,7 +230,7 @@ const CallPage = () => {
     return (
         <RoomContainer>
             <VideoContainer>
-                <StyledVideo muted ref={userVideoAudio} autoPlay playsInline />
+                <StyledVideo muted ref={userVideoAudio} autoPlay playsInline/>
                 {peers.map((peer) => {
                     return (
                         <Video key={peer.peerId} peer={peer.peer} />

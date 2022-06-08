@@ -1,13 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="4fc6761d-e814-4489-bfc1-f1fee13bc854" name="Changes" comment="" />
+    <list default="true" id="4fc6761d-e814-4489-bfc1-f1fee13bc854" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/../meet/meet/src/components/Pages/CallPage/CallPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/../meet/meet/src/components/Pages/CallPage/CallPage.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../meet/meet/src/components/UI/CallPageFooter/CallPageFooter.js" beforeDir="false" afterPath="$PROJECT_DIR$/../meet/meet/src/components/UI/CallPageFooter/CallPageFooter.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../meet/meet/src/components/Whiteboard/Board/Board.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/../meet/meet/src/components/Whiteboard/Board/Board.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../meet/meet/src/components/Whiteboard/Container/Container.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/../meet/meet/src/components/Whiteboard/Container/Container.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../meet/server/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/../meet/server/server.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
   <component name="ProjectId" id="26YsdbyP8PdZ1CbAn46162nXAxE" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -16,7 +27,7 @@
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/user" />
+    <property name="last_opened_file_path" value="$USER_HOME$/Desktop/Licenta/user" />
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
@@ -27,6 +38,9 @@
       <option name="presentableId" value="Default" />
       <updated>1647611943937</updated>
       <workItem from="1647611945197" duration="36000" />
+      <workItem from="1654303961935" duration="15000" />
+      <workItem from="1654640418168" duration="23000" />
+      <workItem from="1654640456621" duration="15000" />
     </task>
     <servers />
   </component>

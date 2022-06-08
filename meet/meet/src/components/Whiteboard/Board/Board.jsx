@@ -12,6 +12,16 @@ class Board extends React.Component {
     isDrawing = false;
     constructor(props) {
         super(props);
+
+        props.socket.on('canvas-data', function(data) {
+            var image = new Image();
+            var canvas = document.querySelector('canvas');
+            var ctx = canvas.getContext('2d');
+            image.onload = function() {
+                ctx.drawImage(image, 0, 0);
+            }
+            image.src = data;
+        })
     }
 
     componentDidMount() {
@@ -38,7 +48,7 @@ class Board extends React.Component {
             ctx.lineWidth = this.props.size;
             ctx.lineJoin = 'round';
             ctx.lineCap = 'round';
-            ctx.strokeStyle = this.props.color;
+            ctx.strokeStyle = this.props.color.value;
 
             this.props.socket.emit("refresh-data", "da");
         });
@@ -80,7 +90,7 @@ class Board extends React.Component {
         ctx.lineWidth = this.props.size;
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
-        ctx.strokeStyle = this.props.color;
+        ctx.strokeStyle = this.props.color.value;
     
         canvas.addEventListener('mousedown', function(e) {
             canvas.addEventListener('mousemove', onPaint, false);
@@ -92,7 +102,7 @@ class Board extends React.Component {
         
         var root = this;
         var onPaint = function() {
-            console.log(root.props);
+            console.log(root.props.color.value);
             ctx.beginPath();
             ctx.moveTo(last_mouse.x, last_mouse.y);
             ctx.lineTo(mouse.x, mouse.y);
@@ -110,6 +120,22 @@ class Board extends React.Component {
     render() {
         return (
             <div className='sketch' id='sketch'>
+                <div className='colorPickerContainer'>
+                    Select Brush Color: &nbsp;
+                    <input id='color' type='color'/>
+                </div>
+
+                <div className='brushSizeContainer'>
+                    Select Brush Size: &nbsp;
+                    <select >
+                        <option value="5">5</option>
+                        <option value="7">7</option>
+                        <option value="9">9</option>
+                        <option value="12">12</option>
+                        <option value="15">15</option>
+                        <option value="20">20</option>
+                    </select>
+                </div>
                 <canvas className='board' id='board'></canvas>
             </div>
         );

@@ -28,6 +28,11 @@ const CallPageFooter = ({
   roomId,
   socket}) => {
 
+
+  const openWhiteboard = (data) => {
+    window.open(`http://localhost:3000/${roomId}/whiteboard`);
+  }
+
   return (
     <div className="footer-item">
       <div className="left-item">
@@ -44,7 +49,7 @@ const CallPageFooter = ({
         <div className="icon-block" onClick={leaveRoom}>
           <FontAwesomeIcon className="icon red" icon={faPhone}/>
         </div>
-        <div className="icon-block" onClick={() => {window.open(`http://localhost:3000/${roomId}/whiteboard`)}}>
+        <div className="icon-block" onClick={() => openWhiteboard("mancare")}>
           <FontAwesomeIcon className="icon" icon={faChalkboard}/>
         </div>
       </div>

@@ -13,7 +13,12 @@ const io = socket(server, {
     }
 });
 
-var lastData;
+let lastData;
+const users = {};
+
+const socketToRoom = {};
+const whiteboardUser = {};
+const whiteboardLastData = {}
 
 if(process.env.PROD) {
     app.use(express.static(path.join(__dirname, './meet/build')));
@@ -71,17 +76,45 @@ const roomHandler = (socket) => {
         })
     }
 
+    const joinWhiteboard = ({username, roomId}) => {
+        const newUser = {username, socketId: socket.id};
+        if (whiteboardUser[roomId]) {
+            whiteboardUser[roomId] = whiteboardUser[roomId].filter(user => user.username !== username);
+            whiteboardUser[roomId].push(newUser);
+        } else {
+            whiteboardUser[roomId] = [newUser];
+            whiteboardLastData[roomId] = {lastData: null};
+        }
+        console.log("Whiteboard: ");
+        console.log(whiteboardUser);
+    }
+
+    const canvasData = ({image, roomId, username}) => {
+        whiteboardLastData[roomId].lastData = image;
+        whiteboardUser[roomId].forEach( user => {
+            if(username !== user.username)
+                io.to(user.socketId).emit('canvas-data', image);
+        });
+    }
+
+    const refreshData = ({roomId, username}) => {
+        if(whiteboardUser[roomId]) {
+            console.log("am");
+            const user = whiteboardUser[roomId].filter(user => user.username === username);
+            console.log(user[0].socketId);
+            io.to(user[0].socketId).emit('refresh-data', {image: whiteboardLastData[roomId].lastData});
+        }
+    }
     socket.on("join", joinRoom);
     socket.on("call-user", callUser);
     socket.on("call-accepted", callAccepted);
     socket.on("leave-room", leaveRoom);
     socket.on("send-message", sendMessage);
-}
-const users = {};
 
-const socketToRoom = {};
-const whiteboardUser = {};
-let socketList = {}
+    socket.on("join-whiteboard", joinWhiteboard);
+    socket.on("canvas-data", canvasData);
+    socket.on("refresh-data", refreshData);
+}
 
 io.on('connection', socket => {
     console.log(socket.id);
@@ -89,17 +122,6 @@ io.on('connection', socket => {
     socket.on("req-check-room", roomID => {
         const exists = users[roomID] !== undefined;
         socket.emit("res-check-room", exists)
-    })
-
-    socket.on('canvas-data', (data) => {
-        lastData = data;
-        socket.broadcast.emit('canvas-data', data);
-    });
-
-    socket.on('refresh-data', (data) => {
-        console.log(data);
-        console.log(socket.id);
-        socket.broadcast.emit('canvas-data', lastData);
     })
 });
 
