@@ -13,12 +13,11 @@ const io = socket(server, {
     }
 });
 
-let lastData;
 const users = {};
 
 const socketToRoom = {};
 const whiteboardUser = {};
-const whiteboardLastData = {}
+const whiteboardData = {};
 
 if(process.env.PROD) {
     app.use(express.static(path.join(__dirname, './meet/build')));
@@ -59,13 +58,15 @@ const roomHandler = (socket) => {
     }
 
     const leaveRoom = ({username, roomID}) => {
-        users[roomID] = users[roomID].filter(user => user.username !== username);
-        if(users[roomID].length === 0)
-            delete users[roomID];
-        else {
-            users[roomID].forEach( user => {
-                io.to(user.socketID).emit('user-left', username);
-            });
+        if(users[roomID]) {
+            users[roomID] = users[roomID].filter(user => user.username !== username);
+            if(users[roomID].length === 0)
+                delete users[roomID];
+            else {
+                users[roomID].forEach( user => {
+                    io.to(user.socketID).emit('user-left', username);
+                });
+            }
         }
     };
 
@@ -83,17 +84,28 @@ const roomHandler = (socket) => {
             whiteboardUser[roomId].push(newUser);
         } else {
             whiteboardUser[roomId] = [newUser];
-            whiteboardLastData[roomId] = {lastData: null};
+            whiteboardData[roomId] = [];
         }
         console.log("Whiteboard: ");
         console.log(whiteboardUser);
+        io.to(newUser.socketId).emit('refresh-data', {elements: whiteboardData[roomId]});
+
+        socket.on('disconnect', () => {
+            if(whiteboardUser[roomId])
+                whiteboardUser[roomId] = whiteboardUser[roomId].filter(user => user.username !== username);
+
+            if(whiteboardUser[roomId].length === 0) delete whiteboardUser[roomId];
+            console.log("disconnect");
+            console.log(whiteboardUser);
+        })
     }
 
-    const canvasData = ({image, roomId, username}) => {
-        whiteboardLastData[roomId].lastData = image;
+    const canvasData = ({element, roomId, username}) => {
+        console.log(element);
+        whiteboardData[roomId].push(element);
         whiteboardUser[roomId].forEach( user => {
             if(username !== user.username)
-                io.to(user.socketId).emit('canvas-data', image);
+                io.to(user.socketId).emit('canvas-data', {element});
         });
     }
 
@@ -102,7 +114,7 @@ const roomHandler = (socket) => {
             console.log("am");
             const user = whiteboardUser[roomId].filter(user => user.username === username);
             console.log(user[0].socketId);
-            io.to(user[0].socketId).emit('refresh-data', {image: whiteboardLastData[roomId].lastData});
+            io.to(user[0].socketId).emit('refresh-data', {elements: whiteboardData[roomId]});
         }
     }
     socket.on("join", joinRoom);
