@@ -1,7 +1,9 @@
 import React from 'react'
 import { useState, useEffect, useRef, useContext } from 'react';
-import styled from 'styled-components'
+import styled from 'styled-components';
+import io from 'socket.io-client';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { SocketContext } from '../../Context/SocketContext';
 import { 
   faTimes,
   faUserFriends,
@@ -13,21 +15,24 @@ import "./Messenger.scss";
 
 const Messenger = ({
   roomID, 
-  socket, 
   toggleMessages, 
   messagesSwitch}) => {
     
   const [message, setMessage] = useState([]);
   const inputRef = useRef();
   const messagesListRef = useRef();
+  const socket = io("http://localhost:5000/");
 
   useEffect(() => {
+    socket.emit("join-messenger", {socket: socket.id, user: window.sessionStorage.getItem("username"), roomId: roomID})
     socket.on('receive-message', ({ msg, sender }) => {
+      console.log(msg);
       setMessage(messages => [...messages, { msg, sender }]);
     });
   }, []); 
 
   useEffect(() => {
+    console.log("dadasdasd");
     messagesListRef.current.scrollIntoView({block: "end"});
   }, [message])
 
@@ -81,6 +86,7 @@ const Messenger = ({
                     </OthersMessage>
                   );
                 } else {
+                  console.log("miau");
                   return (
                     <MyMessage key={idx}>
                       <p className="username">{sender}</p>
@@ -124,6 +130,8 @@ const OthersMessage = styled.div`
     word-break: break-all;
     font-size: 13px;
     font-weight: 400;
+    background: rgba(241, 199, 136, 0.702);
+    border-radius: 7px;
   }
 `;
 
@@ -148,5 +156,7 @@ const MyMessage = styled.div`
     font-size: 13px;
     font-weight: 400;
     text-align: left;
+    background: rgb(205, 233, 224, 0.702);
+    border-radius: 7px;
   }
 `;

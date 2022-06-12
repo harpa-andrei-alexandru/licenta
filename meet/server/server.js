@@ -18,6 +18,7 @@ const users = {};
 const socketToRoom = {};
 const whiteboardUser = {};
 const whiteboardData = {};
+const messengerSocket = {};
 
 if(process.env.PROD) {
     app.use(express.static(path.join(__dirname, './meet/build')));
@@ -35,6 +36,7 @@ const roomHandler = (socket) => {
         } else {
             users[roomID] = [newUser];
         }
+
         console.log("Rooms: ");
         console.log(users);
         socketToRoom[socket.id] = roomID;
@@ -70,10 +72,27 @@ const roomHandler = (socket) => {
         }
     };
 
+    const joinMessenger = ({user, roomId}) => {
+        const newUser = {socketId: socket.id, username: user};
+        if(messengerSocket[roomId] === undefined)
+            messengerSocket[roomId] = [newUser]
+        else {
+            messengerSocket[roomId] = messengerSocket[roomId].filter(s => s.username !== user);
+            messengerSocket[roomId].push({socketId: socket.id, username: user});
+        }
+
+        socket.on('desconnet', () => {
+            messengerSocket[roomId] = messengerSocket[roomId].filter(s => s.username !== user);
+            if(messengerSocket[roomId]. length === 0) delete messengerSocket[roomId];
+        })
+    }
+
     const sendMessage = ({ roomID, msg, sender }) => {
-        let room = users[roomID];
+        console.log(messengerSocket);
+        const room = messengerSocket[roomID];
+        console.log(msg);
         room.forEach(user => {
-            io.to(user.socketID).emit('receive-message', { msg, sender });
+            io.to(user.socketId).emit('receive-message', { msg, sender });
         })
     }
 
@@ -91,10 +110,12 @@ const roomHandler = (socket) => {
         io.to(newUser.socketId).emit('refresh-data', {elements: whiteboardData[roomId]});
 
         socket.on('disconnect', () => {
-            if(whiteboardUser[roomId])
+            if(whiteboardUser[roomId]) {
                 whiteboardUser[roomId] = whiteboardUser[roomId].filter(user => user.username !== username);
+                if(whiteboardUser[roomId].length === 0) delete whiteboardUser[roomId];
+            }
 
-            if(whiteboardUser[roomId].length === 0) delete whiteboardUser[roomId];
+            
             console.log("disconnect");
             console.log(whiteboardUser);
         })
@@ -121,6 +142,7 @@ const roomHandler = (socket) => {
     socket.on("call-user", callUser);
     socket.on("call-accepted", callAccepted);
     socket.on("leave-room", leaveRoom);
+    socket.on("join-messenger", joinMessenger);
     socket.on("send-message", sendMessage);
 
     socket.on("join-whiteboard", joinWhiteboard);

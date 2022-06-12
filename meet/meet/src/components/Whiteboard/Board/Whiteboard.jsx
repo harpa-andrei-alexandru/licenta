@@ -15,12 +15,9 @@ const Whiteboard = ({socket, roomId}) => {
     const sketchRef = useRef();
     const colorRef = useRef();
     const sizeRef = useRef();
-    const mousePosRef = useRef({x: 0, y: 0});
-    const lastMousePosRef = useRef({x: 0, y: 0});
-    const [drawing, setDrawing] = useState(false);
+    const [action, setAction] = useState(false);
     const [elements, setElements] = useState([]);
     const [elementType, setElementType] = useState('line');
-    let timeout;
 
     useLayoutEffect(() => {
         socket.emit("join-whiteboard", {username: window.sessionStorage.getItem("username"), roomId});
@@ -29,7 +26,7 @@ const Whiteboard = ({socket, roomId}) => {
         canvasRef.current.height = parseInt(sketch_style.getPropertyValue('height'));
 
         socket.on('canvas-data', ({element}) => {
-            setElements((elements) => [...elements, element]);
+                setElements((elements) => [...elements, element]);
         });
 
         socket.on('refresh-data', ({ elements }) => {   
@@ -99,12 +96,12 @@ const Whiteboard = ({socket, roomId}) => {
             drawLine(element, context);
         }
     }
-    
+
     const mouseDownEvent = (event) => {
-        console.log(event);
-        setDrawing(true);
+        setAction(true);
         const { clientX, clientY } = event;
-        const userElementsSize = elements.filter((element) => element.username === window.sessionStorage.getItem("username")).length;
+        const username = window.sessionStorage.getItem("username");
+        const userElementsSize = elements.filter((element) => element.username === username).length;
         const element = createElement(clientX, clientY, clientX, clientY, elementType, userElementsSize);
         setElements((elements) => [...elements, element]);
     }
@@ -112,20 +109,20 @@ const Whiteboard = ({socket, roomId}) => {
     const mouseUpEvent = () => {
             const element = elements[elements.length - 1];
             socket.emit('canvas-data', {element, roomId, username: window.sessionStorage.getItem("username")});        
-        setDrawing(false);
+        setAction(false);
     }
 
     const mouseMoveEvent = (event) => {
-        if(!drawing) return;
+        if(!action) return;
         const { clientX, clientY } = event;
         const index = elements.length - 1;
         const stateCopy = [...elements];
-        
+
         if(elementType === 'pen') {
             stateCopy[index].points = [...stateCopy[index].points, {x: clientX, y: clientY}];
         } else {
             const {x1, y1} = elements[index];
-            const element = createElement(x1, y1, clientX, clientY, elementType);
+            const element = createElement(x1, y1, clientX, clientY, elementType, stateCopy[index].id);
             stateCopy[index] = element;
         }
         setElements(stateCopy);

@@ -50,7 +50,6 @@ const CallPage = () => {
         if(window.sessionStorage.getItem("logged") !== "success")
             navigate("/");
         setSocket(socket.current);
-        console.log(socket.current);
         navigator.mediaDevices
             .getUserMedia({ video: true, audio: true })
             .then(stream => {
@@ -239,7 +238,6 @@ const CallPage = () => {
             </VideoContainer>
             <Messenger 
                 roomID={roomID} 
-                socket={socket.current}
                 toggleMessages={toggleMessages}  
                 messagesSwitch={messagesSwitch}/>
             <CallPageFooter 
