@@ -88,9 +88,7 @@ const roomHandler = (socket) => {
     }
 
     const sendMessage = ({ roomID, msg, sender }) => {
-        console.log(messengerSocket);
         const room = messengerSocket[roomID];
-        console.log(msg);
         room.forEach(user => {
             io.to(user.socketId).emit('receive-message', { msg, sender });
         })
@@ -122,19 +120,23 @@ const roomHandler = (socket) => {
     }
 
     const canvasData = ({element, roomId, username}) => {
-        console.log(element);
-        whiteboardData[roomId].push(element);
+        const index = whiteboardData[roomId].findIndex(elem => elem.id === element.id && elem.username === element.username);
+        if(index === -1) {
+            whiteboardData[roomId].push(element);
+        }
+        else {
+            whiteboardData[roomId][index] = element;
+        }
+
         whiteboardUser[roomId].forEach( user => {
             if(username !== user.username)
-                io.to(user.socketId).emit('canvas-data', {element});
+                io.to(user.socketId).emit('canvas-data', {elements: whiteboardData[roomId]});
         });
     }
 
     const refreshData = ({roomId, username}) => {
         if(whiteboardUser[roomId]) {
-            console.log("am");
             const user = whiteboardUser[roomId].filter(user => user.username === username);
-            console.log(user[0].socketId);
             io.to(user[0].socketId).emit('refresh-data', {elements: whiteboardData[roomId]});
         }
     }

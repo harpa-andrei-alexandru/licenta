@@ -15,9 +15,11 @@ const Whiteboard = ({socket, roomId}) => {
     const sketchRef = useRef();
     const colorRef = useRef();
     const sizeRef = useRef();
-    const [action, setAction] = useState(false);
+    const [action, setAction] = useState("none");
     const [elements, setElements] = useState([]);
     const [elementType, setElementType] = useState('line');
+    const [option, setOption] = useState("drawing");
+    const [selectedElement, setSelectedElement] = useState(null);
 
     useLayoutEffect(() => {
         socket.emit("join-whiteboard", {username: window.sessionStorage.getItem("username"), roomId});
@@ -25,8 +27,9 @@ const Whiteboard = ({socket, roomId}) => {
         canvasRef.current.width = parseInt(sketch_style.getPropertyValue('width'));
         canvasRef.current.height = parseInt(sketch_style.getPropertyValue('height'));
 
-        socket.on('canvas-data', ({element}) => {
-                setElements((elements) => [...elements, element]);
+        socket.on('canvas-data', ({elements}) => {
+                console.log(elements);
+                setElements(elements);
         });
 
         socket.on('refresh-data', ({ elements }) => {   
@@ -98,43 +101,107 @@ const Whiteboard = ({socket, roomId}) => {
     }
 
     const mouseDownEvent = (event) => {
-        setAction(true);
         const { clientX, clientY } = event;
-        const username = window.sessionStorage.getItem("username");
-        const userElementsSize = elements.filter((element) => element.username === username).length;
-        const element = createElement(clientX, clientY, clientX, clientY, elementType, userElementsSize);
-        setElements((elements) => [...elements, element]);
+        if(option === "moving") {
+            const element = getElementAtPosition(clientX, clientY)
+            if(element) {
+                if(element.type === "pen") {
+                    const xOffsets = element.points.map(point => clientX - point.x);
+                    const yOffsets = element.points.map(point => clientY - point.y);
+
+                    setSelectedElement({...element, xOffsets, yOffsets});
+                } else {
+                    const offsetX = clientX - element.x1
+                    const offsetY = clientY - element.y1;
+                    setSelectedElement({...element, offsetX, offsetY});
+                }
+                setAction("moving");
+            }
+        } else {    
+            const username = window.sessionStorage.getItem("username");
+            const id = elements.filter((element) => element.username === username).length;
+            const color = colorRef.current.value;
+            const size = sizeRef.current.value
+            const element = createElement(clientX, clientY, clientX, clientY, elementType, id, username, color, size);
+            setElements((elements) => [...elements, element]);
+            setAction("drawing");
+        }
     }
 
     const mouseUpEvent = () => {
             const element = elements[elements.length - 1];
             socket.emit('canvas-data', {element, roomId, username: window.sessionStorage.getItem("username")});        
-        setAction(false);
+            setAction("none");
+            setSelectedElement(null);
     }
 
     const mouseMoveEvent = (event) => {
-        if(!action) return;
         const { clientX, clientY } = event;
-        const index = elements.length - 1;
-        const stateCopy = [...elements];
 
-        if(elementType === 'pen') {
-            stateCopy[index].points = [...stateCopy[index].points, {x: clientX, y: clientY}];
-        } else {
-            const {x1, y1} = elements[index];
-            const element = createElement(x1, y1, clientX, clientY, elementType, stateCopy[index].id);
-            stateCopy[index] = element;
+        if(option === "moving") {
+            event.target.style.cursor = getElementAtPosition(clientX, clientY) ? "move" : "default";
         }
+
+        if(action === "drawing") {
+            const index = elements.length - 1;
+            const stateCopy = [...elements];
+            const username = window.sessionStorage.getItem("username");
+
+            if(elementType === 'pen') {
+                stateCopy[index].points = [...stateCopy[index].points, {x: clientX, y: clientY}];
+                socket.emit('canvas-data', {element: stateCopy[index], roomId, username: window.sessionStorage.getItem("username")});  
+            } else {
+                const {x1, y1} = elements[index];
+                const id = stateCopy[index].id;
+                const color = colorRef.current.value;
+                const size = sizeRef.current.value;
+                const element = createElement(x1, y1, clientX, clientY, elementType, id, username, color, size);
+                stateCopy[index] = element;
+                socket.emit('canvas-data', { element: element, roomId, username }); 
+            }
+            setElements(stateCopy);
+        } else if(action === "moving") {
+            if(selectedElement.type === 'pen') {
+                const updatedPoints = selectedElement.points.map((_, index) => {
+                    return {
+                        x: clientX - selectedElement.xOffsets[index],
+                        y: clientY - selectedElement.yOffsets[index]
+                    }
+                })
+                const stateCopy = [...elements];
+                const index = stateCopy.findIndex(elem => elem.username === selectedElement.username && elem.id === selectedElement.id);
+                stateCopy[index].points = updatedPoints;
+                setElements(stateCopy);
+                socket.emit('canvas-data', {element: stateCopy[index], roomId, username: window.sessionStorage.getItem("username")});  
+            } else {
+                const {x1, y1, x2, y2, offsetX, offsetY} = selectedElement;
+                const width = x2 - x1;
+                const height = y2 - y1;
+                const newX = clientX - offsetX;
+                const newY = clientY - offsetY;
+                updateElement(newX, newY, newX + width, newY + height, selectedElement);
+            }
+        }
+    }
+
+    const updateElement = (x1, y1, x2, y2, element) => {
+        const {type, id, username, color, size} = element;
+        const stateCopy = [...elements];
+        const index = stateCopy.findIndex(elem => elem.username === username && elem.id === id);
+        const updatedElement = createElement(x1, y1, x2, y2, type, id, username, color, size);
+        stateCopy[index] = updatedElement;
+
+        socket.emit('canvas-data', {element: stateCopy[index], roomId, username: window.sessionStorage.getItem("username")});  
         setElements(stateCopy);
     }
 
-    const createElement = (x1, y1, x2, y2, tool, id) => {
+    const createElement = (x1, y1, x2, y2, tool, id, username, color, size) => {
         if(tool === 'pen') {
             return { 
                 points: [{ x: x1, y: y1 }], 
-                color: colorRef.current.value, 
-                size: sizeRef.current.value, 
-                username: window.sessionStorage.getItem("username"),
+                color, 
+                size, 
+                username,
                 type: tool,
                 id
             };
@@ -142,13 +209,49 @@ const Whiteboard = ({socket, roomId}) => {
             return { 
                 x1, y1, 
                 x2, y2, 
-                color: colorRef.current.value, 
-                size: sizeRef.current.value, 
-                username: window.sessionStorage.getItem("username"),
+                color, 
+                size, 
+                username,
                 type: tool,
                 id
             };
         }
+    }
+
+    const isWithinElement = (x, y, element) => {
+        const {type, x1, y1, x2, y2} = element;
+        if(type === "rectangle" || type === "solidRectangle") {
+            const minX = Math.min(x1, x2);
+            const maxX = Math.max(x1, x2);
+            const minY = Math.min(y1, y2);
+            const maxY = Math.max(y1, y2);
+            return x >= minX && x <= maxX && y >= minY && y <= maxY;
+        } else if(type === "line") {
+            return onTheLine(x1, y1, x2, y2, x, y);
+        } else {
+            const betweenAnyPoint = element.points.some((point, index) => {
+                const nextPoint = element.points[index + 1];
+                if(!nextPoint) return false;
+
+                return onTheLine(point.x, point.y, nextPoint.x, nextPoint.y, x, y, 5) !== false;
+            })
+
+            return betweenAnyPoint;
+        }
+    }
+    
+    const onTheLine = (x1, y1, x2, y2, x, y, distanceArea=1) => {
+        const a = {x: x1, y: y1};
+        const b = {x: x2, y: y2};
+        const c = {x, y};
+        const offset = distance(a, b) - (distance(a, c) + distance(b, c));
+        return Math.abs(offset) < distanceArea;
+    }
+
+    const distance = (a, b) => Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
+
+    const getElementAtPosition = (x, y) => {
+        return elements.find(element => isWithinElement(x, y, element));
     }
 
     const selectLine = () => {
@@ -165,6 +268,18 @@ const Whiteboard = ({socket, roomId}) => {
 
     const selectPen = () => {
         setElementType('pen');
+    }
+
+    const selectDrawing = () => {
+        setOption("drawing");
+    }
+
+    const selectMoving = () => {
+        setOption("moving");
+    }
+
+    const selectNone = () => {
+        setOption("none");
     }
 
     return (
@@ -200,6 +315,14 @@ const Whiteboard = ({socket, roomId}) => {
                         <FontAwesomeIcon icon={faPen} />
                     </PenElement>
                 </ElementsContainer>
+                <OptionsContainer>
+                    <DrawingOption onClick={selectDrawing} action={option}>
+                        Drawing
+                    </DrawingOption>
+                    <MovingOption onClick={selectMoving} action={option}>
+                        Moving
+                    </MovingOption>
+                </OptionsContainer>
             </ToolbarContainer>
             <CanvasContainer ref={sketchRef} className='sketch' id='sketch'>
                 <Canvas 
@@ -295,6 +418,7 @@ const LineElement = styled.div`
     align-items: center;
     justify-content: center;
     background: ${props => props.tool === 'line' ? "#f6ab43a4" : "#ffffff0"};
+    cursor: pointer;
 `;
 
 const RectangleElement = styled.div`
@@ -306,7 +430,8 @@ const RectangleElement = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    background: ${props => props.tool === 'rectangle' ? "#f6ab43a4" : "#ffffff0"};  
+    background: ${props => props.tool === 'rectangle' ? "#f6ab43a4" : "#ffffff0"}; 
+    cursor: pointer;
 `;
 
 const PenElement = styled.div`
@@ -318,7 +443,8 @@ const PenElement = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    background: ${props => props.tool === 'pen' ? "#f6ab43a4" : "#ffffff0"}; 
+    background: ${props => props.tool === 'pen' ? "#f6ab43a4" : "#ffffff0"};
+    cursor: pointer;
 `;
 
 const SolidRectangleElement = styled.div`
@@ -331,6 +457,7 @@ const SolidRectangleElement = styled.div`
     align-items: center;
     justify-content: center;
     background: ${props => props.tool === 'solidRectangle' ? "#f6ab43a4" : "#ffffff0"}; 
+    cursor: pointer;
 `;
 
 const Canvas = styled.canvas`
@@ -359,3 +486,39 @@ const SolidRectangle = styled.div`
     border-radius: 2px;
 `
 
+const OptionsContainer = styled.div`
+    width: 33%;
+    background-color: #9cdeec8a;
+    margin: 10px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+`;
+
+const DrawingOption = styled.div`
+    width: 70px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: white;
+    border-radius: 10px;
+    background: ${props => props.action === 'drawing' ? "#f6ab43a4" : "#ffffff"};
+    cursor: pointer;
+    border: 2px solid black;
+    font-weight: bold;
+`
+
+const MovingOption = styled.div`
+    width: 70px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: ${props => props.action === 'moving' ? "#f6ab43a4" : "#ffffff"};
+    border-radius: 10px;
+    cursor: pointer;
+    border: 2px solid black;
+    font-weight: bold;
+`
