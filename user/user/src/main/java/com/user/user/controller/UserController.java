@@ -5,25 +5,18 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.user.user.filter.AuthenticationFilter;
-import com.user.user.model.LoginReq;
 import com.user.user.model.Role;
 import com.user.user.model.User;
 import com.user.user.service.UserService;
 import com.user.user.utility.JwtDecoder;
 import com.user.user.utility.JwtGenerator;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
+
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -32,7 +25,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -54,8 +46,7 @@ public class UserController {
 
     @PostMapping("/user/save")
     public ResponseEntity<?> saveUser(@RequestBody NewUserRequest newUserRequest) {
-        URI uri = URI.create(ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/user/save").toUriString());
-        return ResponseEntity.created(uri).body(userService.saveUser(newUserRequest));
+        return ResponseEntity.status(CREATED).body(userService.saveUser(newUserRequest));
     }
 
     @PostMapping("/role/save")

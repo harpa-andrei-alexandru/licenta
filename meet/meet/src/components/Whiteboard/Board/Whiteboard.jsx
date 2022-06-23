@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useRef, useState, useLayoutEffect } from 'react';
+import io from 'socket.io-client';
+
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -15,6 +17,8 @@ const Whiteboard = ({socket, roomId}) => {
     const sketchRef = useRef();
     const colorRef = useRef();
     const sizeRef = useRef();
+    const textRef = useRef();
+    const socketRef = useRef();
     const [action, setAction] = useState("none");
     const [elements, setElements] = useState([]);
     const [elementType, setElementType] = useState('line');
@@ -22,26 +26,26 @@ const Whiteboard = ({socket, roomId}) => {
     const [selectedElement, setSelectedElement] = useState(null);
 
     useLayoutEffect(() => {
-        socket.emit("join-whiteboard", {username: window.sessionStorage.getItem("username"), roomId});
+        socketRef.current = io("http://localhost:5000/");
+        socketRef.current.emit("join-whiteboard", {username: window.sessionStorage.getItem("username"), roomId});
         var sketch_style = getComputedStyle(sketchRef.current);
         canvasRef.current.width = parseInt(sketch_style.getPropertyValue('width'));
         canvasRef.current.height = parseInt(sketch_style.getPropertyValue('height'));
 
-        socket.on('canvas-data', ({elements}) => {
+        socketRef.current.on('canvas-data', ({elements}) => {
                 console.log(elements);
                 setElements(elements);
         });
 
-        socket.on('refresh-data', ({ elements }) => {   
+        socketRef.current.on('refresh-data', ({ elements }) => {   
             setElements(elements);
         })
 
         window.addEventListener('resize', () => {
             var sketch_style = getComputedStyle(sketchRef.current);
-            console.log(socket.id);
             canvasRef.current.width = parseInt(sketch_style.getPropertyValue('width'));
             canvasRef.current.height = parseInt(sketch_style.getPropertyValue('height'));
-            socket.emit("refresh-data", {roomId, username: window.sessionStorage.getItem("username")});
+            socketRef.current.emit("refresh-data", {roomId, username: window.sessionStorage.getItem("username")});
         });
     }, []);
 
@@ -52,6 +56,12 @@ const Whiteboard = ({socket, roomId}) => {
             drawElement(element, ctx);
         })
     }, [elements]);
+
+    useEffect(() => {
+        if(action === "writing") {
+            textRef.current.focus();
+        }
+    }, [action, selectedElement]);
 
     const drawLine = (element, context) => {
         context.beginPath();
@@ -84,6 +94,13 @@ const Whiteboard = ({socket, roomId}) => {
         }
     }
 
+    const drawText = (element, context) => {
+        // context.lineWidth = element.size;
+        // context.fillStyle = element.color;
+        context.font = "17px serif";
+        context.fillText(element.text, element.x1, element.y1 - canvasRef.current.offsetTop);
+    }
+
     const drawElement = (element, context) => {
         context.lineWidth = element.size;
         context.strokeStyle = element.color;
@@ -94,13 +111,15 @@ const Whiteboard = ({socket, roomId}) => {
             drawRectangle(element, context);
         } else if(element.type === "pen") {
             drawFreeLine(element, context);
-        }
-        else{
+        } else if(element.type === "text") {
+            drawText(element, context);
+        } else {
             drawLine(element, context);
         }
     }
 
     const mouseDownEvent = (event) => {
+        if(action === "writing") return;
         const { clientX, clientY } = event;
         if(option === "moving") {
             const element = getElementAtPosition(clientX, clientY)
@@ -123,16 +142,21 @@ const Whiteboard = ({socket, roomId}) => {
             const color = colorRef.current.value;
             const size = sizeRef.current.value
             const element = createElement(clientX, clientY, clientX, clientY, elementType, id, username, color, size);
+            console.log(element);
             setElements((elements) => [...elements, element]);
-            setAction("drawing");
+            setSelectedElement(element);
+            setAction(elementType === "text" ? "writing" : "drawing");
         }
     }
 
     const mouseUpEvent = () => {
-            const element = elements[elements.length - 1];
-            socket.emit('canvas-data', {element, roomId, username: window.sessionStorage.getItem("username")});        
-            setAction("none");
-            setSelectedElement(null);
+        if(action === "writing") return;
+
+        const element = elements[elements.length - 1];
+        socketRef.current.emit('canvas-data', {element, roomId, username: window.sessionStorage.getItem("username")});        
+
+        setAction("none");
+        setSelectedElement(null);
     }
 
     const mouseMoveEvent = (event) => {
@@ -149,7 +173,7 @@ const Whiteboard = ({socket, roomId}) => {
 
             if(elementType === 'pen') {
                 stateCopy[index].points = [...stateCopy[index].points, {x: clientX, y: clientY}];
-                socket.emit('canvas-data', {element: stateCopy[index], roomId, username: window.sessionStorage.getItem("username")});  
+                socketRef.current.emit('canvas-data', {element: stateCopy[index], roomId, username: window.sessionStorage.getItem("username")});  
             } else {
                 const {x1, y1} = elements[index];
                 const id = stateCopy[index].id;
@@ -157,7 +181,7 @@ const Whiteboard = ({socket, roomId}) => {
                 const size = sizeRef.current.value;
                 const element = createElement(x1, y1, clientX, clientY, elementType, id, username, color, size);
                 stateCopy[index] = element;
-                socket.emit('canvas-data', { element: element, roomId, username }); 
+                socketRef.current.emit('canvas-data', { element: element, roomId, username }); 
             }
             setElements(stateCopy);
         } else if(action === "moving") {
@@ -172,7 +196,9 @@ const Whiteboard = ({socket, roomId}) => {
                 const index = stateCopy.findIndex(elem => elem.username === selectedElement.username && elem.id === selectedElement.id);
                 stateCopy[index].points = updatedPoints;
                 setElements(stateCopy);
-                socket.emit('canvas-data', {element: stateCopy[index], roomId, username: window.sessionStorage.getItem("username")});  
+                socketRef.current.emit('canvas-data', {element: stateCopy[index], roomId, username: window.sessionStorage.getItem("username")});  
+            } else if(selectedElement.type === "text") {
+                console.log("da");
             } else {
                 const {x1, y1, x2, y2, offsetX, offsetY} = selectedElement;
                 const width = x2 - x1;
@@ -191,7 +217,7 @@ const Whiteboard = ({socket, roomId}) => {
         const updatedElement = createElement(x1, y1, x2, y2, type, id, username, color, size);
         stateCopy[index] = updatedElement;
 
-        socket.emit('canvas-data', {element: stateCopy[index], roomId, username: window.sessionStorage.getItem("username")});  
+        socketRef.current.emit('canvas-data', {element: stateCopy[index], roomId, username: window.sessionStorage.getItem("username")});  
         setElements(stateCopy);
     }
 
@@ -204,6 +230,10 @@ const Whiteboard = ({socket, roomId}) => {
                 username,
                 type: tool,
                 id
+            };
+        } else if(tool === "text") {
+            return{
+                x1, y1, color, size, username, type: tool, text: "", id
             };
         } else {
             return { 
@@ -228,6 +258,7 @@ const Whiteboard = ({socket, roomId}) => {
             return x >= minX && x <= maxX && y >= minY && y <= maxY;
         } else if(type === "line") {
             return onTheLine(x1, y1, x2, y2, x, y);
+        } else if(type === "text") {
         } else {
             const betweenAnyPoint = element.points.some((point, index) => {
                 const nextPoint = element.points[index + 1];
@@ -246,6 +277,11 @@ const Whiteboard = ({socket, roomId}) => {
         const c = {x, y};
         const offset = distance(a, b) - (distance(a, c) + distance(b, c));
         return Math.abs(offset) < distanceArea;
+    }
+
+    const onBlur = () => {
+        setAction("none");
+        setSelectedElement(null);
     }
 
     const distance = (a, b) => Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
@@ -268,6 +304,10 @@ const Whiteboard = ({socket, roomId}) => {
 
     const selectPen = () => {
         setElementType('pen');
+    }
+
+    const selectText = () => {
+        setElementType('text');
     }
 
     const selectDrawing = () => {
@@ -314,6 +354,9 @@ const Whiteboard = ({socket, roomId}) => {
                     <PenElement onClick={selectPen} tool={elementType}>
                         <FontAwesomeIcon icon={faPen} />
                     </PenElement>
+                    <TextElement onClick={selectText} tool={elementType}>
+                        T
+                    </TextElement>
                 </ElementsContainer>
                 <OptionsContainer>
                     <DrawingOption onClick={selectDrawing} action={option}>
@@ -325,6 +368,9 @@ const Whiteboard = ({socket, roomId}) => {
                 </OptionsContainer>
             </ToolbarContainer>
             <CanvasContainer ref={sketchRef} className='sketch' id='sketch'>
+                {
+                    action === "writing" ? <textarea ref={textRef} onBlur={onBlur} style={{position: "fixed", top: selectedElement.y1, left: selectedElement.x1}}/> : null
+                }
                 <Canvas 
                     ref={canvasRef} 
                     className='board' 
@@ -457,6 +503,22 @@ const SolidRectangleElement = styled.div`
     align-items: center;
     justify-content: center;
     background: ${props => props.tool === 'solidRectangle' ? "#f6ab43a4" : "#ffffff0"}; 
+    cursor: pointer;
+`;
+
+const TextElement = styled.div`
+    margin: 5px;
+    border: 2px solid black;
+    border-radius: 10px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: ${props => props.tool === 'text' ? "#f6ab43a4" : "#ffffff0"}; 
+    font-family:times, "Times New Roman";
+    font-weight: bold;
+    font-size: 25px;
     cursor: pointer;
 `;
 

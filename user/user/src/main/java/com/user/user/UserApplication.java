@@ -19,18 +19,6 @@ public class UserApplication {
 	}
 
 	@Bean
-	CommandLineRunner run(UserService userService) {
-		return args -> {
-			userService.saveRole(new Role(null, "ADMIN"));
-			userService.saveRole(new Role(null, "USER"));
-			userService.saveRole(new Role(null, "MANAGER"));
-
-			userService.saveUser(new NewUserRequest("andy", "1234","Harpa Andrei-Alexandru", "ADMIN"));
-			userService.saveUser(new NewUserRequest("letty", "1234","Munteanu Letitia-Ioana", "USER"));
-		};
-	}
-
-	@Bean
 	PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
 	}

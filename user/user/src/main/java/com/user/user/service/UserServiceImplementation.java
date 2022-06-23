@@ -1,6 +1,7 @@
 package com.user.user.service;
 
 import com.user.user.controller.NewUserRequest;
+import com.user.user.exception.UserAlreadyExistsException;
 import com.user.user.exception.UserNotFoundException;
 import com.user.user.model.Role;
 import com.user.user.model.User;
@@ -40,6 +41,10 @@ public class UserServiceImplementation implements UserService, UserDetailsServic
     public User saveUser(NewUserRequest newUserRequest) {
         log.info("Saving new user to the database.");
         Optional<Role> role = roleRepository.findByRoleName(newUserRequest.getRoleName());
+        Optional<User> u = userRepository.findById(newUserRequest.getUsername());
+        if(u.isPresent()) {
+            throw new UserAlreadyExistsException();
+        }
         User user = new User(newUserRequest.getUsername(),
                 newUserRequest.getName(),
                 role.get(),

@@ -4,9 +4,11 @@
     justify-content: space-between;
     padding: 20px;
     box-sizing: border-box;
-    border: 5px solid green;
-    background:rgba(180, 233, 216, 0.637);
-    border-radius: 10px;
+    border: 5px solid rgb(255, 255, 255);
+    background:rgba(235,169,155,0.4);
+    margin-top: 5px;
+    border-radius: 20px;
+    height: 150px;
     .logo {
         display: flex;
         align-items: center;
@@ -30,6 +32,7 @@
             font-size: 40px;
             padding: 20px;
             color: rgb(4, 107, 75);
+            cursor: pointer;
         }
 
         .sign-out {
@@ -39,6 +42,8 @@
             &:hover {
                 color: rgb(237, 100, 85);
             }
+            cursor: pointer;
         }
+
     }
 }

@@ -28,6 +28,12 @@ if(process.env.PROD) {
 }
 
 const roomHandler = (socket) => {
+
+    const checkRoom = ({roomID}) => {
+        const exists = users[roomID] !== undefined;
+        socket.emit("res-check-room", exists)
+    }
+
     const joinRoom = ({username, roomID}) => {
         const newUser = {username, socketID: socket.id};
         if (users[roomID]) {
@@ -140,6 +146,8 @@ const roomHandler = (socket) => {
             io.to(user[0].socketId).emit('refresh-data', {elements: whiteboardData[roomId]});
         }
     }
+
+    socket.on("check-room", checkRoom);
     socket.on("join", joinRoom);
     socket.on("call-user", callUser);
     socket.on("call-accepted", callAccepted);
@@ -155,10 +163,6 @@ const roomHandler = (socket) => {
 io.on('connection', socket => {
     console.log(socket.id);
     roomHandler(socket);
-    socket.on("req-check-room", roomID => {
-        const exists = users[roomID] !== undefined;
-        socket.emit("res-check-room", exists)
-    })
 });
 
 const PORT = process.env.PORT || 8000;

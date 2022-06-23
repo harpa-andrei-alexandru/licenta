@@ -1,20 +1,25 @@
 .home-page {
     display: flex;
     flex-direction: column;
+    width: 199.5vh;
+    height: 99.9vh;
+    background-size: 100% 100%;
+    overflow-x: hidden !important;
+    background-image: url("../../../login.jpg") !important;
     .body{
         display: flex;
         align-items: center;
         justify-content: center;
         .content{
-            background:rgba(180, 233, 216, 0.637);
-            border-radius: 10px;
+            background:rgba(235,169,155,0.7);
+            border-radius: 30px;
             padding: 50px 50px 50px 50px;
-            border: 5px solid green;
-            margin-top: 150px;
+            border: 5px solid rgb(254, 254, 254);
+            margin-top: 190px;
             max-width: 500px;
             h2{
-                font-size: 44px;
-                font-weight: 400;
+                font-size: 42px;
+                font-weight: 500;
                 margin: 0;
             }
             p{

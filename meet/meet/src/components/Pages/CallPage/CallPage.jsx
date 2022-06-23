@@ -11,7 +11,6 @@ import CallPageFooter from '../../UI/CallPageFooter/CallPageFooter';
 import Messenger from '../../UI/Messenger/Messenger';
 import Video from '../../Video/Video';
 import { StyledVideo } from '../../Video/Video';
-import { SocketContext } from '../../Context/SocketContext';
 
 
 const videoConstraints = {
@@ -38,18 +37,16 @@ const CallPage = () => {
     const {roomID} = useParams();
     const navigate = useNavigate();
 
-    const { setSocket } = useContext(SocketContext);
     const username = window.sessionStorage.getItem("username");
     console.log(username);
   
     
-    socket.current = io("http://localhost:5000/");
-    if(!socket.current) window.location.reload();
+    // if(!socket.current) window.location.reload();
     
     useEffect(() => {
         if(window.sessionStorage.getItem("logged") !== "success")
             navigate("/");
-        setSocket(socket.current);
+        socket.current = io("http://localhost:5000/");
         navigator.mediaDevices
             .getUserMedia({ video: true, audio: true })
             .then(stream => {
@@ -185,6 +182,8 @@ const CallPage = () => {
     }
 
     const leaveRoom = () => {
+        userVideoAudio.current.srcObject.getVideoTracks()[0].stop();
+        userVideoAudio.current.srcObject.getAudioTracks()[0].stop();
         socket.current.emit("leave-room", {username, roomID});
         navigate("/home");
     }

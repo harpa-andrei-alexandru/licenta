@@ -1,9 +1,8 @@
 import React from 'react'
-import { useState, useEffect, useRef, useContext } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import io from 'socket.io-client';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { SocketContext } from '../../Context/SocketContext';
 import { 
   faTimes,
   faUserFriends,
@@ -26,13 +25,11 @@ const Messenger = ({
   useEffect(() => {
     socket.emit("join-messenger", {socket: socket.id, user: window.sessionStorage.getItem("username"), roomId: roomID})
     socket.on('receive-message', ({ msg, sender }) => {
-      console.log(msg);
       setMessage(messages => [...messages, { msg, sender }]);
     });
   }, []); 
 
   useEffect(() => {
-    console.log("dadasdasd");
     messagesListRef.current.scrollIntoView({block: "end"});
   }, [message])
 

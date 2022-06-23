@@ -4,29 +4,31 @@ import Header from '../../UI/Header';
 import {v1 as uuid} from 'uuid';
 
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useContext, useRef } from 'react';
+import { useEffect, useRef } from 'react';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faVideo, faKeyboard } from '@fortawesome/free-solid-svg-icons';
+import io from 'socket.io-client';
 
-import { SocketContext } from "../../Context/SocketContext";
-
+toast.configure();
 const HomePage = () => {
   const roomID = useRef();
-  const socket = useContext(SocketContext);
   const navigate = useNavigate();
-
+  const socketRef = useRef();
   
   useEffect(() => {
     if(window.sessionStorage.getItem("logged") !== "success")
       navigate("/");
-    // socket.on("res-check-room", (exists) => {
-    //   if(exists === true)
-    //     navigate(`/${roomID.current.value}`);
-    //   else { 
-    //     alert(`There is no room with id: ${roomID.current.value}`);
-    //   }
-    // });
+    socketRef.current = io("http://localhost:5000/");
+    socketRef.current.on("res-check-room", (exists) => {
+      if(exists === true)
+        navigate(`/${roomID.current.value}`);
+      else { 
+        toast.warning(`There is no room with id: ${roomID.current.value}`, {position: toast.POSITION.TOP_CENTER});
+      }
+    });
   }, []);
 
   const createRoom = () => {
@@ -35,11 +37,10 @@ const HomePage = () => {
   }
 
   const joinClassroom = () => {
-    if(roomID.current.value === null)
-      alert("Please enter a room id");
+    if(roomID.current.value === "")
+      toast.warning('Please insert a room id!', {position: toast.POSITION.TOP_CENTER});
     else {
-      console.log(roomID.current.value);
-      socket.emit("req-check-room", {id: roomID.current.value});
+      socketRef.current.emit("check-room", {roomID : roomID.current.value});
     }
   }
 
@@ -57,9 +58,6 @@ const HomePage = () => {
             <h2>
               Free classroom meetings.
             </h2>
-            <p>
-              This is just a clone for now.
-            </p>
             <div className="action-btn">
               <button className="btn green" onClick={createRoom}>
                 <FontAwesomeIcon className="icon-block" icon={faVideo}/>
@@ -68,7 +66,7 @@ const HomePage = () => {
               <div className="input-block">
                 <div className="input-section">
                   <FontAwesomeIcon className="icon-block" icon={faKeyboard}/>
-                  <input placeholder="Enter a code or link" ref={roomID}/>
+                  <input placeholder="Enter a room id" ref={roomID}/>
                 </div>
                 <button className="btn no-bg" onClick={joinClassroom}>Join</button>
               </div>
