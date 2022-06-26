@@ -1,9 +1,13 @@
 .green, .no-bg {
-  background: rgb(73, 231, 181) !important;
-  color: #fff !important;
-  font-weight: 500 !important;
-  border: 1px solid black !important;
+  background: rgba(234,207,120,255) !important;
+  color: rgba(80,76,77,255) !important;
+  font-weight: 600 !important;
+  border: 1px solid white !important;
   &:hover {
-    background: rgb(65, 214, 167) !important;
+    background: rgba(215,187,103,255) !important;
   }
+}
+
+.hide2 {
+  display: none !important;
 }

@@ -29,6 +29,10 @@ const HomePage = () => {
         toast.warning(`There is no room with id: ${roomID.current.value}`, {position: toast.POSITION.TOP_CENTER});
       }
     });
+
+    return () => {
+      socketRef.current.disconnect();
+    }
   }, []);
 
   const createRoom = () => {

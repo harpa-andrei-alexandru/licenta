@@ -7,7 +7,7 @@
     align-items: center;
     justify-content: center;
     height: 90px;
-    background: white;
+    background: rgba(248,237,207,255);
     z-index: 1;
     border-radius: 5px;
     .left-item{
@@ -31,8 +31,8 @@
         justify-content: center;
         flex: 1;
         .icon-block{
-            background: white;
-            border: 1px solid rgb(4, 107, 75);
+            background: rgba(248,215,184,255);
+            border: 2px solid rgba(169,106,123,255);
             width: 50px;
             height: 50px;
             border-radius: 50%;
@@ -41,7 +41,7 @@
             justify-content: center;
             margin: 0 10px;
             .icon{
-                color: rgb(4, 107, 75);
+                color: rgba(153,91,52,255);
                 font-size: 20px;
                 &.red{
                     color: rgb(187, 48, 48);
@@ -49,7 +49,7 @@
             }
             &:hover{
                 cursor: pointer;
-                box-shadow: 0 0 20px rgb(155, 226, 204);
+                box-shadow: 0 0 20px rgba(235,169,155,255);
             }
             &.red-bg{
                 background: rgb(187, 48, 48);
@@ -64,20 +64,21 @@
     .right-item{
         display: flex;
         align-items: center;
-        justify-content: flex-end;
+        justify-content: space-around;
         height: 100%;
         width: 340px;
         .icon-block{
             display: flex;
             align-items: center;
             justify-content: center;
+            border: 2px solid rgba(248,237,207,255);
             flex-direction: column;
-            height: 100%;
-            width: 146px;
-            color: rgb(4, 107, 75);
+            height: 75%;
+            width: 40%;
+            color: rgba(153,91,52,255);
             .icon{
                 font-size: 20px;
-                margin-top: 10px;
+                margin-top: 20px;
             }
             .title{
                 margin: 0;
@@ -86,12 +87,13 @@
             }
             &:hover{
                 cursor: pointer;
-                background: rgb(205, 233, 224);
-                border-radius: 30px;
+                background: white;
+                border-radius: 25px;
+                border: 2px solid brown;
             }
             &.red-bg{
                 .icon{
-                    color: red;
+                    color: rgba(24,127,146,255);
                 }
 
             }

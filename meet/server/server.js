@@ -35,7 +35,7 @@ const roomHandler = (socket) => {
     }
 
     const joinRoom = ({username, roomID}) => {
-        const newUser = {username, socketID: socket.id};
+        const newUser = {username, socketID: socket.id, video: true, audio: true};
         if (users[roomID]) {
             users[roomID] = users[roomID].filter(user => user.username !== username);
             users[roomID].push(newUser);
@@ -100,6 +100,43 @@ const roomHandler = (socket) => {
         })
     }
 
+
+    const startPresenting = ({username, roomId}) => {
+        users[roomId].forEach((user) => {
+            if(user.username !== username) {
+                io.to(user.socketID).emit('start-presenting', { username });
+            }
+        });
+    };
+
+    const stopPresenting = ({username, roomId}) => {
+        users[roomId].forEach((user) => {
+            if(user.username !== username) {
+                io.to(user.socketID).emit('stop-presenting', { userName: username });
+            }
+        });
+    };
+
+    const cameraSwitch = ({username, roomID, value}) => {
+        users[roomID].forEach((user) => {
+            if(user.username !== username) {
+                io.to(user.socketID).emit('camera-switch', { username, value });
+            } else {
+                user.video = value;
+            }
+        });
+    }
+
+    const microphoneSwitch = ({username, roomID, value}) => {
+        users[roomID].forEach((user) => {
+            if(user.username !== username) {
+                io.to(user.socketID).emit('microphone-switch', { username, value });
+            } else{
+                user.audio = value;
+            }
+        });
+    }
+
     const joinWhiteboard = ({username, roomId}) => {
         const newUser = {username, socketId: socket.id};
         if (whiteboardUser[roomId]) {
@@ -154,6 +191,10 @@ const roomHandler = (socket) => {
     socket.on("leave-room", leaveRoom);
     socket.on("join-messenger", joinMessenger);
     socket.on("send-message", sendMessage);
+    socket.on("start-presenting", startPresenting);
+    socket.on("stop-presenting", stopPresenting);
+    socket.on("camera-switch", cameraSwitch);
+    socket.on("microphone-switch", microphoneSwitch);
 
     socket.on("join-whiteboard", joinWhiteboard);
     socket.on("canvas-data", canvasData);

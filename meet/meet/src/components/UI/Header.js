@@ -1,8 +1,6 @@
 import React from 'react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-    faQuestionCircle,
-    faCog,
     faSignOut
 } from "@fortawesome/free-solid-svg-icons";
 import "./Header.scss";
@@ -19,8 +17,6 @@ const Header = ({doLogout}) => {
         </div>
         <div className="action-btn">
             <FontAwesomeIcon className="sign-out" icon={faSignOut} onClick={doLogout} />
-            <FontAwesomeIcon className="icon-block" icon={faQuestionCircle} />
-            <FontAwesomeIcon className="icon-block" icon={faCog} />
         </div>
     </div>
   )

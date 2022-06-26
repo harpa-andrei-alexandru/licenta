@@ -1,11 +1,16 @@
 import React from 'react';
-import { useRef, useEffect, useState, useContext } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
 import './CallPage.scss';
 import styled from "styled-components";
 import io from 'socket.io-client';
 import Peer from "simple-peer";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { 
+    faUser,
+    faMicrophoneSlash
+} from '@fortawesome/free-solid-svg-icons';
 
 import CallPageFooter from '../../UI/CallPageFooter/CallPageFooter';
 import Messenger from '../../UI/Messenger/Messenger';
@@ -29,6 +34,9 @@ const CallPage = () => {
     const [audioSwitch, setAudioSwitch] = useState(true);
     const [messagesSwitch, setMessagesSwitch] = useState(false);
     const [screenShareSwitch, setScreenShareSwitch] = useState(false);
+    const [presenting, setPresenting] = useState(false);
+    const [currentPresentation, setCurrentPresentation] = useState('');
+    const presentingRef = useRef(false);
     const screenTrackRef = useRef();
     const userVideoAudio = useRef();
     const userStream = useRef();
@@ -38,17 +46,14 @@ const CallPage = () => {
     const navigate = useNavigate();
 
     const username = window.sessionStorage.getItem("username");
-    console.log(username);
-  
-    
+      
     // if(!socket.current) window.location.reload();
-    
     useEffect(() => {
         if(window.sessionStorage.getItem("logged") !== "success")
             navigate("/");
         socket.current = io("http://localhost:5000/");
         navigator.mediaDevices
-            .getUserMedia({ video: true, audio: true })
+            .getUserMedia({ video: videoConstraints, audio: true })
             .then(stream => {
                 userVideoAudio.current.srcObject = stream;
                 userStream.current = stream;
@@ -62,7 +67,10 @@ const CallPage = () => {
                         const peerObj = {
                             peer,
                             username: user.username,
-                            peerId: user.socketID
+                            peerId: user.socketID,
+                            presenting: false,
+                            video: user.video,
+                            audio: user.audio
                         };
                         peersRef.current.push(peerObj);
                         peersInRoom.push(peerObj);
@@ -79,7 +87,9 @@ const CallPage = () => {
                         peer,
                         username: username,
                         peerId: callerId,
-                        
+                        presenting: false,
+                        video: true,
+                        audio: true
                     }
 
                     if(!user) {
@@ -121,6 +131,63 @@ const CallPage = () => {
                     const peersInRoom = peersRef.current.filter(p => p.username !== username);
                     peersRef.current = peersInRoom;
                     setPeers(peersInRoom);
+                });
+
+                socket.current.on("start-presenting", ({username}) => {
+                    const peersCopy = [...peersRef.current];
+                    peersCopy.forEach((peer) =>{
+                        if(peer.username === username) {
+                            peer.presenting = true;
+                        }
+                    });
+                    peersRef.current = peersCopy;
+                    if(currentPresentation === '')
+                        setCurrentPresentation(username);
+                    setPeers(peersCopy);
+                });
+
+                socket.current.on("stop-presenting", ({userName}) => {
+                    const peersCopy = [...peersRef.current];
+                    peersCopy.forEach((peer) =>{
+                        if(peer.username === userName) {
+                            peer.presenting = false;
+                        }
+                    });
+                    peersRef.current = peersCopy;
+                    let user = '';
+                    for(let i = 0; i < peersCopy.length; i++) {
+                        if(peersCopy[i].presenting === true){
+                            user = peersCopy[i].username;
+                            break;
+                        }
+                    }
+                    if(user === '' && presentingRef.current === true)
+                        setCurrentPresentation(username);
+                    else
+                        setCurrentPresentation(user)
+                    setPeers(peersCopy);
+                });
+
+                socket.current.on('camera-switch', ({username, value}) => {
+                    const peersCopy = [...peersRef.current];
+                    peersCopy.forEach((peer) =>{
+                        if(peer.username === username) {
+                            peer.video = value;
+                        }
+                    });
+                    peersRef.current = peersCopy;
+                    setPeers(peersCopy);
+                });
+
+                socket.current.on('microphone-switch', ({username, value}) => {
+                    const peersCopy = [...peersRef.current];
+                    peersCopy.forEach((peer) =>{
+                        if(peer.username === username) {
+                            peer.audio = value;
+                        }
+                    });
+                    peersRef.current = peersCopy;
+                    setPeers(peersCopy);
                 });
             });
 
@@ -169,16 +236,22 @@ const CallPage = () => {
 
     const toggleCamera = (value) => {
         userVideoAudio.current.srcObject.getVideoTracks()[0].enabled = value;
+        socket.current.emit("camera-switch", {username, roomID, value});
         setVideoSwitch(value);
     }
 
     const toggleAudio = (value) => {
         userVideoAudio.current.srcObject.getAudioTracks()[0].enabled = value;
+        socket.current.emit("microphone-switch", {username, roomID, value});
         setAudioSwitch(value);
     }
 
     const toggleMessages = (value) => {
         setMessagesSwitch(value);
+    }
+
+    const selectPresentation = (username) => {
+        setCurrentPresentation(username);
     }
 
     const leaveRoom = () => {
@@ -213,32 +286,89 @@ const CallPage = () => {
                       );
                     });
                     userVideoAudio.current.srcObject = userStream.current;
+                    socket.current.emit("stop-presenting", {username, roomId: roomID});
+                    let user = ''
+                    for(let i = 0; i < peersRef.current.length; ++i) {
+                        if(peersRef.current[i].presenting === true) {
+                            user = peersRef.current[i].username;
+                            break;
+                        }
+                    }
+                    presentingRef.current = false;
+                    setCurrentPresentation(user);
                     setScreenShareSwitch(false);
+                    setPresenting(false);
                 };
 
                 userVideoAudio.current.srcObject = stream;
                 screenTrackRef.current = screenTrack;
+                socket.current.emit("start-presenting", {username, roomId: roomID});
+                presentingRef.current = true;
+                setCurrentPresentation(username);
                 setScreenShareSwitch(true);
+                setPresenting(true);
             })
         } else {
             screenTrackRef.current.onended();
         }
     }
 
+    const checkIfIsPresenting = () => {
+        for(let i = 0; i < peersRef.current.length; ++i) {
+            if(peersRef.current[i].presenting) return true;
+        }
+
+        return false;
+    }
+
     return (
         <RoomContainer>
-            <VideoContainer>
-                <StyledVideo muted ref={userVideoAudio} autoPlay playsInline/>
-                {peers.map((peer) => {
-                    return (
-                        <Video key={peer.peerId} peer={peer.peer} />
-                    );
-                })}
+            <VideoContainer users={peers.length}>
+                    <div key="777" className={`${(presenting && currentPresentation === username) || (!presenting && !checkIfIsPresenting()) ? 'inner' : 'hide2'}`} users={peers.length}>
+                        <StyledVideo muted ref={userVideoAudio} autoPlay playsInline/>
+                        {!videoSwitch && 
+                            <UserWithoutCamera constraints={videoConstraints}>
+                                <UserIconContainer>
+                                    <FontAwesomeIcon className="user-icon" icon={faUser}/>
+                                </UserIconContainer>
+                                <UsernameContainer>{username}</UsernameContainer>
+                            </UserWithoutCamera>}
+                        {!audioSwitch && 
+                            <MicrophoneContainer constraints={videoConstraints}>
+                                <FontAwesomeIcon className="user-icon-microphone" icon={faMicrophoneSlash}/>
+                            </MicrophoneContainer>}
+                    </div>
+                    {peers.map((peer, idx) => {
+                        return (
+                            <div key={idx} className={`${(peer.presenting && currentPresentation === peer.username) || (!presenting && !checkIfIsPresenting()) ? 'inner' : 'hide2'}`} users={peers.length}>
+                                <Video key={peer.peerId} peer={peer.peer}/> 
+                                {!peer.video && 
+                                    <UserWithoutCamera constraints={videoConstraints}>
+                                        <UserIconContainer>
+                                            <FontAwesomeIcon className="user-icon" icon={faUser}/>
+                                        </UserIconContainer>
+                                        <UsernameContainer>{peer.username}</UsernameContainer>
+                                    </UserWithoutCamera>}
+                                {!peer.audio && 
+                                    <MicrophoneContainer constraints={videoConstraints}>
+                                        <FontAwesomeIcon className="user-icon-microphone" icon={faMicrophoneSlash}/>
+                                    </MicrophoneContainer>}
+                            </div>
+                        );
+                    })}
             </VideoContainer>
+            
             <Messenger 
                 roomID={roomID} 
                 toggleMessages={toggleMessages}  
-                messagesSwitch={messagesSwitch}/>
+                messagesSwitch={messagesSwitch}
+                people={peers}
+                selectPresentation={selectPresentation}
+                currentUsername={username}
+                currentVideo={videoSwitch}
+                currentAudio={audioSwitch}
+                currentPresenting={presenting}
+            />
             <CallPageFooter 
                 toggleShareScreen={shareScreen}
                 toggleCamera={toggleCamera} 
@@ -257,24 +387,93 @@ const CallPage = () => {
 
 const RoomContainer = styled.div`
     width: 100%;
-    height: 900px;
+    height: 875px;
     max-height: 100vh;
     display: flex;
     flex-direction: row;
-    background-color: #233f30;
+    background: rgba(248,237,207,255);
 `;
 
 const VideoContainer = styled.div`
-  width: 100%;
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  box-sizing: border-box;
-  flex-wrap: wrap;
-
-    > * {
-       flex: 0 1 50%;
+    height: 100%;
+    grid-template-columns: ${props => {
+        if(props.users === 0)
+            return "repeat(1, 1fr)";
+        else if(props.users === 1)
+            return "repeat(2, 1fr)";
+        else
+            return "repeat(3, 1fr)"
+    }};
+    grid-template-rows: ${props => {
+        if(props.users / 3 === 0)
+            return "repeat(1, 1fr)";
+        else if(props.users / 3 === 2)
+            return "repeat(2, 1fr)";
+        else
+            return "repeat(3, 1fr)"
+    }};
+    width: 100%;
+    display: grid;
+    .inner{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: ${props => {
+            if(props.users / 3 < 1)
+                return "875px";
+            else if(props.users / 3 < 2)
+                return `${875/2}px`;
+            else
+                return `${875/3}px`;
+        }};
+        flex: 1;
     }
 `;
 
+
+const UserWithoutCamera = styled.div`
+    position: absolute;
+    border-radius: 20px;
+    border: 4px solid brown;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    background: #313131;
+    width: ${props => `${props.constraints.width}px`};
+    height: ${props => `${props.constraints.height}px`};
+    z-index: 1;
+`;
+
+const UserIconContainer = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    border: 4px solid white;
+`
+const UsernameContainer = styled.div`
+    margin-top: 10px;
+    color: white;
+    font-size: 30px;
+    font-weight: 500;
+`
+
+const MicrophoneContainer = styled.div`
+    .user-icon-microphone {
+        width: 25px;
+        height: 25px;
+        color: gold;
+        margin-left: 1%;
+        margin-top: 1%;
+    }
+    position: absolute;
+    z-index: 2;
+    display: flex;
+    width: ${props => `${props.constraints.width}px`};
+    height: ${props => `${props.constraints.height}px`};
+`
 export default CallPage

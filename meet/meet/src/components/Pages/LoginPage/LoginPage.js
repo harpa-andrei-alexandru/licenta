@@ -115,6 +115,7 @@ const LoginPage = () => {
             axios.post("http://localhost:8081/api/user/save", userData, {headers: headers})
                 .then((res) => {
                     setRegister(false);
+                    toast.info("Account created successfully", {position: toast.POSITION.TOP_CENTER, autoClose: 1500});
                 })
                 .catch((err) => {
                     if(err.response.status === 400)
@@ -236,6 +237,9 @@ const Input = styled.input`
     border-radius: 10px;
     text-align: center !important;
     border: 4px solid gray;
+    &:hover {
+        background-color: rgba(252,240,216,255);
+    }
 `;
 
 const SubmitInput = styled.input`
@@ -259,7 +263,6 @@ const LoginForm = styled.form`
     align-items: center;
     justify-content: center;
     flex-direction: column;
-    background-color: rgb(155, 226, 204);
     width: 640px;
     height: 427px;
     border-radius: 200px;
@@ -267,7 +270,7 @@ const LoginForm = styled.form`
         font-family: montserrat, sans-serif;
     }
     border: 4px solid black;
-    background-image: url(${formImage});
+    background-color: rgba(247,246,190,0.8);
 `;
 
 const LoginContainer = styled.div`

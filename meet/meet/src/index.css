@@ -12,36 +12,3 @@ code {
     monospace;
 }
 
-.width-peer0 {
-  width: 45% !important;
-}
-
-.width-peer1 {
-  width: 45% !important;
-}
-.width-peer2 {
-  width: 30% !important;
-}
-.width-peer3 {
-  width: 28% !important;
-}
-.width-peer4 {
-  width: 28% !important;
-}
-.width-peer5 {
-  width: 28% !important;
-}
-.width-peer6 {
-  width: 25% !important;
-}
-
-.width-peer7 {
-  width: 25% !important;
-}
-.width-peer8 {
-  width: 25% !important;
-}
-
-.width-peer {
-  width: 20% !important;
-}

@@ -4,7 +4,7 @@ import styled from "styled-components";
 
 export const StyledVideo = styled.video`
     border-radius: 20px;
-    border: 3px solid rgb(27, 44, 43);
+    border: 4px solid brown;
 `;
 
 const Video = (props) => {

@@ -5,7 +5,7 @@
     padding: 20px;
     box-sizing: border-box;
     border: 5px solid rgb(255, 255, 255);
-    background:rgba(235,169,155,0.4);
+    background:rgba(247,246,190,1);
     margin-top: 5px;
     border-radius: 20px;
     height: 150px;
@@ -21,7 +21,7 @@
             font-size: 30px;
             font-weight: bold;
             padding-left: 4px;
-            color: rgb(4, 107, 75);
+            color: rgba(80,76,77,255);
         }
     }
 
@@ -31,14 +31,14 @@
         .icon-block{
             font-size: 40px;
             padding: 20px;
-            color: rgb(4, 107, 75);
+            color: rgba(80,76,77,255);
             cursor: pointer;
         }
 
         .sign-out {
             font-size: 40px;
             padding: 20px;
-            color: rgb(4, 107, 75);
+            color: rgba(80,76,77,255);
             &:hover {
                 color: rgb(237, 100, 85);
             }

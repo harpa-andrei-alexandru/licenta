@@ -26,8 +26,6 @@
     .messenger-header-tabs{
         display: flex;
         align-items: center;
-        border-bottom: 1px solid rgb(4, 107, 75);
-        border-radius: 20px;
         .tab{
             display: flex;
             align-items: center;
@@ -39,6 +37,8 @@
             }
             &.active{
                 border-bottom: 2px solid rgb(4, 107, 75);
+                border-bottom-left-radius: 20px;
+                border-bottom-right-radius: 20px;
                 color: rgb(92, 233, 188)
             }
             &:hover {
@@ -77,6 +77,107 @@
                 color: rgb(8, 74, 80);
                 font-size: 14px;
             }
+        }
+    }
+
+    .people-section{
+        padding: 20px;
+        flex: 1;
+        overflow-y: scroll;
+        &::-webkit-scrollbar {
+            width: 12px;
+        }
+        &::-webkit-scrollbar-thumb {
+            background: rgb(133, 131, 131);
+            border-radius: 50rem;
+        }
+        &::-webkit-scrollbar-track {
+            background-color: white;
+        }
+
+        .people-block{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            .user{
+                display:flex;
+                align-items: center;
+                justify-content: center;
+                flex-direction: row;
+                width: 90%;
+                border: 2px solid white;
+                margin-bottom: 10px;
+                &:hover{
+                    background-color: rgba(248,237,207,255);
+                    border-radius: 10%;
+                    border: 2px solid black;
+                }
+                .user-details {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-around;
+                    width: 50%;
+                    .user-icon-container{
+                        width: 30px;
+                        height: 30px;
+                        border-radius: 50%;
+                        border: 2px solid rgb(0, 0, 0);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        .user-icon{
+                            width: 25px;
+                            height: 25px;
+                            color: grey;
+                        }
+                    }
+                }
+
+                .user-controls {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-around;
+                    width: 50%;
+                    .video-icon-container{
+                        width: 25px;
+                        height: 25px;
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        .video-icon {
+                            width: 65%;
+                            height: 65%;
+                        }
+                    }
+    
+                    .audio-icon-container{
+                        width: 25px;
+                        height: 25px;
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        .audio-icon {
+                            width: 65%;
+                            height: 65%;
+                        }
+                    }
+    
+                    .close{
+                        background: rgb(202, 29, 17);
+                        .video-icon {
+                            color: white;
+                        }
+    
+                        .microphone-icon {
+                            color: white;
+                        }
+                    }
+                }
+            }
+            
         }
     }
 

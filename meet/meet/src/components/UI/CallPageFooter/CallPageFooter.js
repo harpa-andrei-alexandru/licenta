@@ -60,7 +60,7 @@ const CallPageFooter = ({
         </div>
         <div className={`icon-block ${!messagesSwitch ? "" : "red-bg"}`} onClick={() => {toggleMessages(!messagesSwitch);}}>
           <FontAwesomeIcon className="icon" icon={faMessage}/>
-          <p>Hide Messages</p>
+          <p>{messagesSwitch ? "Hide Messages" : "Show Messages"}</p>
         </div>
       </div>
     </div>
