@@ -15,8 +15,9 @@ import io from 'socket.io-client';
 toast.configure();
 const HomePage = () => {
   const roomID = useRef();
-  const navigate = useNavigate();
   const socketRef = useRef();
+  const navigate = useNavigate();
+
   
   useEffect(() => {
     if(window.sessionStorage.getItem("logged") !== "success")
@@ -55,8 +56,7 @@ const HomePage = () => {
 
   return (
     <div className="home-page">
-        <Header
-          doLogout={doLogout}/>
+        <Header doLogout={doLogout}/>
         <div className="body">
           <div className="content">
             <h2>

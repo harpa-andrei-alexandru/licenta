@@ -2,11 +2,11 @@
     position: fixed;
     bottom: 0;
     left: 0;
-    width: 100%;
+    width: 100vw;
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 90px;
+    height: 9.36vh;
     background: rgba(248,237,207,255);
     z-index: 1;
     border-radius: 5px;
@@ -14,7 +14,7 @@
         display: flex;
         align-items: center;
         height: 100%;
-        width: 350px;
+        width: 18.22vw;
         .icon-block{
             display: flex;
             align-items: center;
@@ -26,6 +26,7 @@
     }
     .center-item {
         width: 100%;
+        height: 100%;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -33,8 +34,8 @@
         .icon-block{
             background: rgba(248,215,184,255);
             border: 2px solid rgba(169,106,123,255);
-            width: 50px;
-            height: 50px;
+            width: 4%;
+            height: 55%;
             border-radius: 50%;
             display: flex;
             align-items: center;

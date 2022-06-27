@@ -9,14 +9,9 @@ import HomePage from './components/Pages/HomePage/HomePage';
 import NoMatch from './components/Pages/NoMatch/NoMatch';
 import Container from './components/Whiteboard/Container/Container';
 
-import { SocketContext } from './components/Context/SocketContext';
-
 function App() {
-  const [socket, setSocket] = useState(null);
-  const value = useMemo(() => ({socket, setSocket}), [socket]);
   return (
     <Router>
-      <SocketContext.Provider value={value}>
         <Routes>
             <Route path="/" exact element={<LoginPage/>}/>
             <Route exact path="/:roomID" element={<CallPage/>}/>
@@ -24,7 +19,6 @@ function App() {
             <Route path="*" element={<NoMatch/>}/>
             <Route path="/:id/whiteboard" element={<Container/>}/>
         </Routes>
-      </SocketContext.Provider>
     </Router>
   );
 }

@@ -16,12 +16,8 @@ import CallPageFooter from '../../UI/CallPageFooter/CallPageFooter';
 import Messenger from '../../UI/Messenger/Messenger';
 import Video from '../../Video/Video';
 import { StyledVideo } from '../../Video/Video';
+import {InnerGridContainer} from '../../Video/Video';
 
-
-const videoConstraints = {
-    height: window.innerHeight / 4,
-    width: window.innerWidth / 4
-};
 
 const shareScreenConstraints = {
     height: 1100,
@@ -36,24 +32,26 @@ const CallPage = () => {
     const [screenShareSwitch, setScreenShareSwitch] = useState(false);
     const [presenting, setPresenting] = useState(false);
     const [currentPresentation, setCurrentPresentation] = useState('');
+
     const presentingRef = useRef(false);
     const screenTrackRef = useRef();
     const userVideoAudio = useRef();
     const userStream = useRef();
     const peersRef = useRef([]);
     const socket = useRef();
+    
     const {roomID} = useParams();
     const navigate = useNavigate();
 
     const username = window.sessionStorage.getItem("username");
-      
+    console.log(peers);
     // if(!socket.current) window.location.reload();
     useEffect(() => {
         if(window.sessionStorage.getItem("logged") !== "success")
             navigate("/");
         socket.current = io("http://localhost:5000/");
         navigator.mediaDevices
-            .getUserMedia({ video: videoConstraints, audio: true })
+            .getUserMedia({ video: true, audio: true })
             .then(stream => {
                 userVideoAudio.current.srcObject = stream;
                 userStream.current = stream;
@@ -80,7 +78,7 @@ const CallPage = () => {
                 });
 
                 socket.current.on("incoming-call", ({ signal, callerId, info }) => {
-                    const {username, socketID} = info;
+                    const {username} = info;
                     const user = peersRef.current.find(peer => peer.username === username);
                     const peer = addPeer(signal, callerId, stream);
                     const peerObj = {
@@ -264,7 +262,7 @@ const CallPage = () => {
     const shareScreen = () => {
 
         if(!screenShareSwitch) {
-            navigator.mediaDevices.getDisplayMedia({ video: shareScreenConstraints, cursor: true}).then(stream => {
+            navigator.mediaDevices.getDisplayMedia({ video: true, cursor: true}).then(stream => {
                 const screenTrack = stream.getTracks()[0];
                 
                 peersRef.current.forEach(({ peer }) => {
@@ -324,36 +322,27 @@ const CallPage = () => {
     return (
         <RoomContainer>
             <VideoContainer users={peers.length}>
-                    <div key="777" className={`${(presenting && currentPresentation === username) || (!presenting && !checkIfIsPresenting()) ? 'inner' : 'hide2'}`} users={peers.length}>
-                        <StyledVideo muted ref={userVideoAudio} autoPlay playsInline/>
-                        {!videoSwitch && 
-                            <UserWithoutCamera constraints={videoConstraints}>
+                        <InnerGridContainer users={peers.length} hide={(presenting && currentPresentation === username) || (!presenting && !checkIfIsPresenting())} presenting={presenting}>
+                            <StyledVideo users={peers.length} muted ref={userVideoAudio} autoPlay playsInline presenting={presenting}/>
+                            {!videoSwitch && 
+                            <UserWithoutCamera users={peers.length}>
                                 <UserIconContainer>
                                     <FontAwesomeIcon className="user-icon" icon={faUser}/>
                                 </UserIconContainer>
                                 <UsernameContainer>{username}</UsernameContainer>
                             </UserWithoutCamera>}
-                        {!audioSwitch && 
-                            <MicrophoneContainer constraints={videoConstraints}>
+                            {!audioSwitch && 
+                            <MicrophoneContainer users={peers.length}>
                                 <FontAwesomeIcon className="user-icon-microphone" icon={faMicrophoneSlash}/>
                             </MicrophoneContainer>}
-                    </div>
+                        </InnerGridContainer>
+                        
                     {peers.map((peer, idx) => {
                         return (
-                            <div key={idx} className={`${(peer.presenting && currentPresentation === peer.username) || (!presenting && !checkIfIsPresenting()) ? 'inner' : 'hide2'}`} users={peers.length}>
-                                <Video key={peer.peerId} peer={peer.peer}/> 
-                                {!peer.video && 
-                                    <UserWithoutCamera constraints={videoConstraints}>
-                                        <UserIconContainer>
-                                            <FontAwesomeIcon className="user-icon" icon={faUser}/>
-                                        </UserIconContainer>
-                                        <UsernameContainer>{peer.username}</UsernameContainer>
-                                    </UserWithoutCamera>}
-                                {!peer.audio && 
-                                    <MicrophoneContainer constraints={videoConstraints}>
-                                        <FontAwesomeIcon className="user-icon-microphone" icon={faMicrophoneSlash}/>
-                                    </MicrophoneContainer>}
-                            </div>
+                            <Video users={peers.length} 
+                                   key={peer.peerId} 
+                                   peer={peer} 
+                                   hide={(peer.presenting && currentPresentation === peer.username) || (!presenting && !checkIfIsPresenting())}/>
                         );
                     })}
             </VideoContainer>
@@ -386,13 +375,14 @@ const CallPage = () => {
 }
 
 const RoomContainer = styled.div`
-    width: 100%;
-    height: 875px;
+    width: 100vw;
+    height: 90.65vh;
     max-height: 100vh;
     display: flex;
     flex-direction: row;
     background: rgba(248,237,207,255);
 `;
+
 
 const VideoContainer = styled.div`
     height: 100%;
@@ -414,25 +404,10 @@ const VideoContainer = styled.div`
     }};
     width: 100%;
     display: grid;
-    .inner{
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        height: ${props => {
-            if(props.users / 3 < 1)
-                return "875px";
-            else if(props.users / 3 < 2)
-                return `${875/2}px`;
-            else
-                return `${875/3}px`;
-        }};
-        flex: 1;
-    }
 `;
 
 
-const UserWithoutCamera = styled.div`
+export const UserWithoutCamera = styled.div`
     position: absolute;
     border-radius: 20px;
     border: 4px solid brown;
@@ -441,12 +416,28 @@ const UserWithoutCamera = styled.div`
     align-items: center;
     flex-direction: column;
     background: #313131;
-    width: ${props => `${props.constraints.width}px`};
-    height: ${props => `${props.constraints.height}px`};
+    width: ${props => {
+        if(props.users === 0) {
+            return "100vh";
+        } else if(props.users === 1) {
+            return "75vh";
+        } else if(props.users === 2 || (props.users > 2 && props.users <= 5)) {
+            return "45vh";
+        }
+    }};
+    height: ${props => {
+        if(props.users === 0) {
+            return "75vh";
+        } else if(props.users === 1) {
+            return "56.25vh";
+        } else if(props.users === 2 || (props.users > 2 && props.users <= 5)) {
+            return "33.75vh";
+        }
+    }};
     z-index: 1;
 `;
 
-const UserIconContainer = styled.div`
+export const UserIconContainer = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
@@ -455,14 +446,14 @@ const UserIconContainer = styled.div`
     border-radius: 50%;
     border: 4px solid white;
 `
-const UsernameContainer = styled.div`
+export const UsernameContainer = styled.div`
     margin-top: 10px;
     color: white;
     font-size: 30px;
     font-weight: 500;
 `
 
-const MicrophoneContainer = styled.div`
+export const MicrophoneContainer = styled.div`
     .user-icon-microphone {
         width: 25px;
         height: 25px;
@@ -473,7 +464,23 @@ const MicrophoneContainer = styled.div`
     position: absolute;
     z-index: 2;
     display: flex;
-    width: ${props => `${props.constraints.width}px`};
-    height: ${props => `${props.constraints.height}px`};
+    width: ${props => {
+        if(props.users === 0) {
+            return "100vh";
+        } else if(props.users === 1) {
+            return "75vh";
+        } else if(props.users === 2 || (props.users > 2 && props.users <= 5)) {
+            return "45vh";
+        }
+    }};
+    height: ${props => {
+        if(props.users === 0) {
+            return "75vh";
+        } else if(props.users === 1) {
+            return "56.25vh";
+        } else if(props.users === 2 || (props.users > 2 && props.users <= 5)) {
+            return "33.75vh";
+        }
+    }};
 `
 export default CallPage

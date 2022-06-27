@@ -12,18 +12,19 @@ import {
 
 import styled from 'styled-components';
 
-const Whiteboard = ({socket, roomId}) => {
+const Whiteboard = ({roomId}) => {
+    const [action, setAction] = useState("none");
+    const [elements, setElements] = useState([]);
+    const [elementType, setElementType] = useState('line');
+    const [option, setOption] = useState("drawing");
+    const [selectedElement, setSelectedElement] = useState(null);
+
     const canvasRef = useRef();
     const sketchRef = useRef();
     const colorRef = useRef();
     const sizeRef = useRef();
     const textRef = useRef();
     const socketRef = useRef();
-    const [action, setAction] = useState("none");
-    const [elements, setElements] = useState([]);
-    const [elementType, setElementType] = useState('line');
-    const [option, setOption] = useState("drawing");
-    const [selectedElement, setSelectedElement] = useState(null);
 
     useLayoutEffect(() => {
         socketRef.current = io("http://localhost:5000/");
@@ -95,8 +96,6 @@ const Whiteboard = ({socket, roomId}) => {
     }
 
     const drawText = (element, context) => {
-        // context.lineWidth = element.size;
-        // context.fillStyle = element.color;
         context.font = "17px serif";
         context.fillText(element.text, element.x1, element.y1 - canvasRef.current.offsetTop);
     }

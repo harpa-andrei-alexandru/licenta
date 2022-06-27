@@ -4,8 +4,7 @@ import { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from "axios";
 import styled from "styled-components";
-import background from "../../../login.png";
-import formImage from "../../../form.jpg";
+import background from "../../../login.jpg";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -228,13 +227,13 @@ export default LoginPage;
 
 
 const Input = styled.input`
-    margin-top: 10px;
-    margin-bottom: 20px;
-    font-size: 16px;
+    margin-top: 3%;
+    margin-bottom: 5%;
+    font-size: 1rem;
     outline: none;
-    width: 200px;
+    width: 10rem;
     border: none;
-    border-radius: 10px;
+    border-radius: 1rem;
     text-align: center !important;
     border: 4px solid gray;
     &:hover {
@@ -263,9 +262,9 @@ const LoginForm = styled.form`
     align-items: center;
     justify-content: center;
     flex-direction: column;
-    width: 640px;
-    height: 427px;
-    border-radius: 200px;
+    width: 33.33%;
+    height: 44.22%;
+    border-radius: 40%;
     * {
         font-family: montserrat, sans-serif;
     }
@@ -274,9 +273,10 @@ const LoginForm = styled.form`
 `;
 
 const LoginContainer = styled.div`
-    width: 199.7vh;
+    width: 100vw;
     height: 100vh;
     display: flex;
+    flex: 0 0 100%;
     justify-content: center;
     align-items: center;
     overflow: hidden;
