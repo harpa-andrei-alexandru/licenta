@@ -114,7 +114,6 @@ const Messenger = ({
                         </OthersMessage>
                       );
                     } else {
-                      console.log("miau");
                       return (
                         <MyMessage key={idx}>
                           <p className="username">{sender}</p>

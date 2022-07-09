@@ -25,7 +25,7 @@ const CallPageFooter = ({
   screenShareSwitch,
   leaveRoom,
   roomId,
-  socket}) => {
+  presenting}) => {
 
 
   const openWhiteboard = (data) => {
@@ -39,10 +39,10 @@ const CallPageFooter = ({
         </div>
       </div>
       <div className="center-item">
-        <div className={`icon-block ${videoSwitch ? "" : "red-bg"}`} onClick={() => {toggleCamera(!videoSwitch);}}>
+        <div className={`icon-block ${presenting ? "disable" : ""} ${videoSwitch ? "" : "red-bg"}`} onClick={() => {toggleCamera(!videoSwitch);}}>
           <FontAwesomeIcon className="icon" icon={videoSwitch ? faVideo : faVideoSlash} />
         </div>
-        <div className={`icon-block ${audioSwitch ? "" : "red-bg"}`} onClick={() => {toggleAudio(!audioSwitch);}}>
+        <div className={`icon-block ${presenting ? "disable" : ""} ${audioSwitch ? "" : "red-bg"}`} onClick={() => {toggleAudio(!audioSwitch);}}>
             <FontAwesomeIcon className="icon" icon={audioSwitch ? faMicrophone : faMicrophoneSlash}/>
         </div>
         <div className="icon-block" onClick={leaveRoom}>

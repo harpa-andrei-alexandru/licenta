@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { useRef, useState, useLayoutEffect } from 'react';
 import io from 'socket.io-client';
 
-
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faSlash,
@@ -24,6 +23,7 @@ const Whiteboard = ({roomId}) => {
     const colorRef = useRef();
     const sizeRef = useRef();
     const textRef = useRef();
+    const fontRef = useRef();
     const socketRef = useRef();
 
     useLayoutEffect(() => {
@@ -34,7 +34,6 @@ const Whiteboard = ({roomId}) => {
         canvasRef.current.height = parseInt(sketch_style.getPropertyValue('height'));
 
         socketRef.current.on('canvas-data', ({elements}) => {
-                console.log(elements);
                 setElements(elements);
         });
 
@@ -96,12 +95,33 @@ const Whiteboard = ({roomId}) => {
     }
 
     const drawText = (element, context) => {
-        context.font = "17px serif";
+        context.font = `${element.size}px ${element.font}`;
+        context.textBaseline = "top";
+        context.fillStyle = element.color;
         context.fillText(element.text, element.x1, element.y1 - canvasRef.current.offsetTop);
     }
 
+    const drawEllipse = (element, context) => {
+        const {x1, y1, x2, y2} = element;
+        const startY = y1 - canvasRef.current.offsetTop;
+        const endY = y2 - canvasRef.current.offsetTop;
+        
+        context.moveTo(x1, startY);
+        context.beginPath();
+        context.ellipse(x1 + (x2 - x1) / 2, startY + (endY - startY) / 2, Math.abs(x2 - x1) / 2, Math.abs(y2 - y1) / 2, 0, 0, 2 * Math.PI)
+        if(element.type === "solidEllipse") {
+            context.fillStyle = element.color;
+            context.fill();
+        }
+        context.stroke();
+    }
+
     const drawElement = (element, context) => {
-        context.lineWidth = element.size;
+        if(element.type === "solidEllipse" || element.type === "solidRectangle") {
+            context.lineWidth = 1;
+        } else {
+            context.lineWidth = element.size;
+        }
         context.strokeStyle = element.color;
         
         if(element.type === "solidRectangle") {
@@ -112,6 +132,8 @@ const Whiteboard = ({roomId}) => {
             drawFreeLine(element, context);
         } else if(element.type === "text") {
             drawText(element, context);
+        } else if(element.type === "ellipse" || element.type === "solidEllipse") {
+            drawEllipse(element, context);
         } else {
             drawLine(element, context);
         }
@@ -120,6 +142,7 @@ const Whiteboard = ({roomId}) => {
     const mouseDownEvent = (event) => {
         if(action === "writing") return;
         const { clientX, clientY } = event;
+        const username = window.sessionStorage.getItem("username");
         if(option === "moving") {
             const element = getElementAtPosition(clientX, clientY)
             if(element) {
@@ -135,13 +158,26 @@ const Whiteboard = ({roomId}) => {
                 }
                 setAction("moving");
             }
-        } else {    
-            const username = window.sessionStorage.getItem("username");
+        } else if(option === "deleting") {
+            const element = getElementAtPosition(clientX, clientY)
+            if(element) {
+                const stateCopy = [...elements
+                    .filter(e => (e.id !== element.id && element.username === e.username) || e.username !== element.username)
+                    .map(e => {
+                        if(e.id > element.id && e.username === element.username) {
+                            e.id -= 1;
+                        }
+                        return e;
+                    })];
+                socketRef.current.emit('delete-element', {element, roomId, username});        
+                setElements(stateCopy);
+            }
+        } else{    
             const id = elements.filter((element) => element.username === username).length;
             const color = colorRef.current.value;
-            const size = sizeRef.current.value
-            const element = createElement(clientX, clientY, clientX, clientY, elementType, id, username, color, size);
-            console.log(element);
+            const size = sizeRef.current.value;
+            const font = fontRef.current.value;
+            const element = createElement(clientX, clientY, clientX, clientY, elementType, id, username, color, size, font);
             setElements((elements) => [...elements, element]);
             setSelectedElement(element);
             setAction(elementType === "text" ? "writing" : "drawing");
@@ -150,10 +186,10 @@ const Whiteboard = ({roomId}) => {
 
     const mouseUpEvent = () => {
         if(action === "writing") return;
-
+        if(option === "deleting") return;
         const element = elements[elements.length - 1];
-        socketRef.current.emit('canvas-data', {element, roomId, username: window.sessionStorage.getItem("username")});        
-
+        if(element)
+            socketRef.current.emit('canvas-data', {element, roomId, username: window.sessionStorage.getItem("username")});        
         setAction("none");
         setSelectedElement(null);
     }
@@ -163,6 +199,8 @@ const Whiteboard = ({roomId}) => {
 
         if(option === "moving") {
             event.target.style.cursor = getElementAtPosition(clientX, clientY) ? "move" : "default";
+        } else if(option === "deleting") {
+            event.target.style.cursor = getElementAtPosition(clientX, clientY) ? "pointer" : "default";
         }
 
         if(action === "drawing") {
@@ -178,7 +216,8 @@ const Whiteboard = ({roomId}) => {
                 const id = stateCopy[index].id;
                 const color = colorRef.current.value;
                 const size = sizeRef.current.value;
-                const element = createElement(x1, y1, clientX, clientY, elementType, id, username, color, size);
+                const font = fontRef.current.value;
+                const element = createElement(x1, y1, clientX, clientY, elementType, id, username, color, size, font);
                 stateCopy[index] = element;
                 socketRef.current.emit('canvas-data', { element: element, roomId, username }); 
             }
@@ -196,8 +235,6 @@ const Whiteboard = ({roomId}) => {
                 stateCopy[index].points = updatedPoints;
                 setElements(stateCopy);
                 socketRef.current.emit('canvas-data', {element: stateCopy[index], roomId, username: window.sessionStorage.getItem("username")});  
-            } else if(selectedElement.type === "text") {
-                console.log("da");
             } else {
                 const {x1, y1, x2, y2, offsetX, offsetY} = selectedElement;
                 const width = x2 - x1;
@@ -214,13 +251,17 @@ const Whiteboard = ({roomId}) => {
         const stateCopy = [...elements];
         const index = stateCopy.findIndex(elem => elem.username === username && elem.id === id);
         const updatedElement = createElement(x1, y1, x2, y2, type, id, username, color, size);
+        if(element.type === 'text') {
+            updatedElement.text = element.text;
+            updatedElement.font = element.font;
+        }
         stateCopy[index] = updatedElement;
 
         socketRef.current.emit('canvas-data', {element: stateCopy[index], roomId, username: window.sessionStorage.getItem("username")});  
         setElements(stateCopy);
     }
 
-    const createElement = (x1, y1, x2, y2, tool, id, username, color, size) => {
+    const createElement = (x1, y1, x2, y2, tool, id, username, color, size, font) => {
         if(tool === 'pen') {
             return { 
                 points: [{ x: x1, y: y1 }], 
@@ -232,9 +273,9 @@ const Whiteboard = ({roomId}) => {
             };
         } else if(tool === "text") {
             return{
-                x1, y1, color, size, username, type: tool, text: "", id
+                x1, y1, x2, y2, color, size, username, type: tool, text: "", id, font
             };
-        } else {
+        } else{
             return { 
                 x1, y1, 
                 x2, y2, 
@@ -258,6 +299,19 @@ const Whiteboard = ({roomId}) => {
         } else if(type === "line") {
             return onTheLine(x1, y1, x2, y2, x, y);
         } else if(type === "text") {
+            return x >= x1 && x <= x2 && y >= y1 && y <= y2;
+        } else if(type === "ellipse" || type === "solidEllipse") {
+            const minX = Math.min(x1, x2);
+            const minY = Math.min(y1, y2);
+            const b = Math.abs(y1 - y2);
+            const a = Math.abs(x1 - x2);
+
+            const cX = minX + Math.abs(x2 - x1) / 2;
+            const cY = minY + Math.abs(y2 - y1) / 2;
+
+            const value = (Math.pow((x - cX), 2) / Math.pow(a, 2)) + (Math.pow((y - cY), 2) / Math.pow(b, 2));
+            return value <= 0.26;
+
         } else {
             const betweenAnyPoint = element.points.some((point, index) => {
                 const nextPoint = element.points[index + 1];
@@ -279,8 +333,26 @@ const Whiteboard = ({roomId}) => {
     }
 
     const onBlur = () => {
+        const {id, x1, y1, username} = selectedElement;
         setAction("none");
         setSelectedElement(null);
+        if(textRef.current.value.length === 0) {
+            const stateCopy = [...elements.filter(e => (e.username === username && e.id !== id) || username !== e.username)];
+            setElements(stateCopy);
+        } else {
+            const ctx = canvasRef.current.getContext('2d');
+            const metrics = ctx.measureText(textRef.current.value);
+            const textW = metrics.width;
+            const textH = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
+            const stateCopy = [...elements];
+            const index = stateCopy.findIndex(elem => elem.username === selectedElement.username && elem.id === selectedElement.id);
+            stateCopy[index].text = textRef.current.value;
+            stateCopy[index].x2 = x1 + textW;
+            stateCopy[index].y2 = y1 + textH;
+            setElements(stateCopy);
+            socketRef.current.emit('canvas-data', {element: stateCopy[index], roomId, username: window.sessionStorage.getItem("username")});
+        }
+        
     }
 
     const distance = (a, b) => Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
@@ -290,31 +362,53 @@ const Whiteboard = ({roomId}) => {
     }
 
     const selectLine = () => {
+        setOption("drawing");
         setElementType('line');
     }
 
     const selectRectangle = () => {
+        setOption("drawing");
         setElementType('rectangle');
     }
 
     const selectSolidRectangle = () => {
+        setOption("drawing");
         setElementType('solidRectangle');
     }
 
     const selectPen = () => {
+        setOption("drawing");
         setElementType('pen');
     }
 
     const selectText = () => {
+        setOption("drawing");
         setElementType('text');
     }
 
+    const selectEllipse = () => {
+        setOption("drawing");
+        setElementType('ellipse');
+    }
+
+    const selectSolidEllipse = () => {
+        setOption("drawing");
+        setElementType('solidEllipse');
+    }
+
     const selectDrawing = () => {
+        setElementType('line');
         setOption("drawing");
     }
 
     const selectMoving = () => {
+        setElementType('none');
         setOption("moving");
+    }
+
+    const selectDeleting = () => {
+        setElementType('none');
+        setOption("deleting");
     }
 
     const selectNone = () => {
@@ -337,38 +431,73 @@ const Whiteboard = ({roomId}) => {
                             <Option value="12">12</Option>
                             <Option value="15">15</Option>
                             <Option value="20">20</Option>
+                            <Option value="25">25</Option>
+                            <Option value="30">30</Option>
+                            <Option value="35">35</Option>
+                            <Option value="40">40</Option>
+                            <Option value="45">45</Option>
+                            <Option value="50">50</Option>
                         </SelectSize>
+                    </div>
+                    <div>
+                        <SelectFont ref={fontRef}>
+                            <Option value="arial">Arial</Option>
+                            <Option value="brush script mt">Brush Script MT</Option>
+                            <Option value="courier new">Courier New</Option>
+                            <Option value="garamond">Garamond</Option>
+                            <Option value="georgia">Georgia</Option>
+                            <Option value="helvetica">Helvetica</Option>
+                            <Option value="tahoma">Tahoma</Option>
+                            <Option value="times new roman">Times New Roman</Option>
+                            <Option value="trebuchet ms">Trebuchet MS</Option>
+                            <Option value="verdana">Verdana</Option>
+                        </SelectFont>
                     </div>
                 </ElementStyleContainer>
                 <ElementsContainer>
-                    <LineElement onClick={selectLine} tool={elementType}>
+                    <DrawingElement onClick={selectLine} tool={elementType} element="line">
                         <FontAwesomeIcon icon={faSlash} />
-                    </LineElement>
-                    <RectangleElement onClick={selectRectangle} tool={elementType}>
+                    </DrawingElement>
+                    <DrawingElement onClick={selectRectangle} tool={elementType} element="rectangle">
                         <Rectangle/>
-                    </RectangleElement>
-                    <SolidRectangleElement onClick={selectSolidRectangle} tool={elementType}>
+                    </DrawingElement>
+                    <DrawingElement onClick={selectSolidRectangle} tool={elementType} element="solidRectangle">
                         <SolidRectangle/>
-                    </SolidRectangleElement>
-                    <PenElement onClick={selectPen} tool={elementType}>
+                    </DrawingElement>
+                    <DrawingElement onClick={selectEllipse} tool={elementType} element="ellipse">
+                        <Ellipse/>
+                    </DrawingElement>
+                    <DrawingElement onClick={selectSolidEllipse} tool={elementType} element="solidEllipse">
+                        <SolidEllipse/>
+                    </DrawingElement>
+                    <DrawingElement onClick={selectPen} tool={elementType} element="pen">
                         <FontAwesomeIcon icon={faPen} />
-                    </PenElement>
-                    <TextElement onClick={selectText} tool={elementType}>
+                    </DrawingElement>
+                    <DrawingElement onClick={selectText} tool={elementType} element="text">
                         T
-                    </TextElement>
+                    </DrawingElement>
                 </ElementsContainer>
                 <OptionsContainer>
-                    <DrawingOption onClick={selectDrawing} action={option}>
+                    <ElementOption onClick={selectDrawing} action={option} option={"drawing"}>
                         Drawing
-                    </DrawingOption>
-                    <MovingOption onClick={selectMoving} action={option}>
+                    </ElementOption>
+                    <ElementOption onClick={selectMoving} action={option} option={"moving"}>
                         Moving
-                    </MovingOption>
+                    </ElementOption>
+                    <ElementOption onClick={selectDeleting} action={option} option={"deleting"}>
+                        Delete
+                    </ElementOption>
                 </OptionsContainer>
             </ToolbarContainer>
             <CanvasContainer ref={sketchRef} className='sketch' id='sketch'>
                 {
-                    action === "writing" ? <textarea ref={textRef} onBlur={onBlur} style={{position: "fixed", top: selectedElement.y1, left: selectedElement.x1}}/> : null
+                    action === "writing" ? <TextArea    ref={textRef} 
+                                                        x={selectedElement.x1} 
+                                                        y={selectedElement.y1} 
+                                                        font={selectedElement.font} 
+                                                        size={selectedElement.size} 
+                                                        color={selectedElement.color} 
+                                                        onBlur={onBlur}/> : null
                 }
                 <Canvas 
                     ref={canvasRef} 
@@ -398,6 +527,7 @@ const ElementStyleContainer = styled.div`
     background-color: #9cdeec8a;
     margin: 10px;
     border-radius: 10px;
+    justify-content: space-around;
 `;
 
 const ColorPickerContainer = styled.div`
@@ -439,6 +569,24 @@ const SelectSize = styled.select`
     cursor: pointer;
 `;
 
+const SelectFont = styled.select`
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    -ms-appearance: none;
+    appearance: none;
+    outline: 0;
+    box-shadow: none;
+    border: 2px solid black;
+    width: 150px;
+    height: 30px;
+    display: flex;
+    text-align-last: center;
+    border-radius: 15%;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+`;
+
 const Option = styled.option`
     font-size: 15px;
     font-weight: bold;
@@ -453,7 +601,7 @@ const ElementsContainer = styled.div`
     align-items: left;
 `;
 
-const LineElement = styled.div`
+const DrawingElement = styled.div`
     margin: 5px;
     border: 2px solid black;
     border-radius: 10px;
@@ -462,62 +610,10 @@ const LineElement = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    background: ${props => props.tool === 'line' ? "#f6ab43a4" : "#ffffff0"};
-    cursor: pointer;
-`;
-
-const RectangleElement = styled.div`
-    margin: 5px;
-    border: 2px solid black;
-    border-radius: 10px;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: ${props => props.tool === 'rectangle' ? "#f6ab43a4" : "#ffffff0"}; 
-    cursor: pointer;
-`;
-
-const PenElement = styled.div`
-    margin: 5px;
-    border: 2px solid black;
-    border-radius: 10px;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: ${props => props.tool === 'pen' ? "#f6ab43a4" : "#ffffff0"};
-    cursor: pointer;
-`;
-
-const SolidRectangleElement = styled.div`
-    margin: 5px;
-    border: 2px solid black;
-    border-radius: 10px;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: ${props => props.tool === 'solidRectangle' ? "#f6ab43a4" : "#ffffff0"}; 
-    cursor: pointer;
-`;
-
-const TextElement = styled.div`
-    margin: 5px;
-    border: 2px solid black;
-    border-radius: 10px;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: ${props => props.tool === 'text' ? "#f6ab43a4" : "#ffffff0"}; 
+    background: ${props => props.tool === props.element ? "#f6ab43a4" : "#ffffff0"}; 
     font-family:times, "Times New Roman";
     font-weight: bold;
-    font-size: 25px;
+    ${props => props.element === "text" ? "font-size: 25px;" : ""}
     cursor: pointer;
 `;
 
@@ -547,6 +643,20 @@ const SolidRectangle = styled.div`
     border-radius: 2px;
 `
 
+const Ellipse = styled.div`
+    border: 2px solid black;
+    width: 20px;
+    height: 15px;
+    border-radius: 75%;
+`
+
+const SolidEllipse = styled.div`
+    background-color: black;
+    width: 22px;
+    height: 17px;
+    border-radius: 75%;
+`
+
 const OptionsContainer = styled.div`
     width: 33%;
     background-color: #9cdeec8a;
@@ -557,7 +667,8 @@ const OptionsContainer = styled.div`
     justify-content: space-around;
 `;
 
-const DrawingOption = styled.div`
+
+const ElementOption = styled.div`
     width: 70px;
     height: 30px;
     display: flex;
@@ -565,21 +676,18 @@ const DrawingOption = styled.div`
     justify-content: center;
     background-color: white;
     border-radius: 10px;
-    background: ${props => props.action === 'drawing' ? "#f6ab43a4" : "#ffffff"};
+    background: ${props => props.action === props.option ? "#f6ab43a4" : "#ffffff"};
     cursor: pointer;
     border: 2px solid black;
     font-weight: bold;
 `
 
-const MovingOption = styled.div`
-    width: 70px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: ${props => props.action === 'moving' ? "#f6ab43a4" : "#ffffff"};
-    border-radius: 10px;
-    cursor: pointer;
-    border: 2px solid black;
-    font-weight: bold;
+const TextArea = styled.textarea`
+    position: fixed;
+    top: ${props => `${props.y}px`};
+    left: ${props => `${props.x}px`};
+    font-size: ${props => `${props.size}px`};
+    color: ${props => `${props.color}`};
+    font-family: ${props => `${props.font}`};
+    white-space: pre-line;
 `

@@ -12,7 +12,7 @@ public class JwtGenerator {
 
         return JWT.create()
                 .withSubject(username)
-                .withExpiresAt(new Date(System.currentTimeMillis() + 10 * 60 * 1000))
+                .withExpiresAt(new Date(System.currentTimeMillis() + 2 * 60 * 60 * 1000))
                 .withIssuer(issuer)
                 .withClaim("role", role)
                 .sign(algorithm);

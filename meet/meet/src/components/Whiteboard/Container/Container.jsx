@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import './style.css';
+import './Container.css';
 import Whiteboard from '../Board/Whiteboard';
 
 const Container = () => {

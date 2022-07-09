@@ -1,7 +1,7 @@
 import React from 'react';
 import { useRef, useEffect } from 'react';
 import styled from "styled-components";
-import {UserWithoutCamera, UserIconContainer, UsernameContainer, MicrophoneContainer} from '../Pages/CallPage/CallPage';
+import {UserWithoutCamera, UserIconContainer, UsernameContainer, MicrophoneContainer} from '../CallPage';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
     faUser,
@@ -23,14 +23,17 @@ export const StyledVideo = styled.video`
             return "45vh";
         }
     }};
-
-    margin-right: ${props => props.presenting ? "1vh" : "0vh"};
     height: auto;
+    ${props => {
+        if(props.presenting){
+            return "z-index: 3;"
+        }
+    }}
 `;
 
 
 export const InnerGridContainer = styled.div`
-    display: ${props => props.hide ? "flex" : 'none !important'};
+    ${props => props.hide ? "display: flex" : 'display: none !important'};
     align-items: center;
     justify-content: center;
     width: 100%;
@@ -42,7 +45,13 @@ export const InnerGridContainer = styled.div`
         else
             return `${90.65/3}vh`;
     }};
-    margin-right: ${props => props.presenting ? "2vw" : "0vw"};
+
+    ${props => {
+        if((props.idx === 2 && props.users === 3) || (props.idx === 5 && props.users === 6))
+            return "grid-column: span 3;"
+        else if((props.idx === 2 && props.users === 4) || (props.idx === 5 && props.users === 7))
+            return "grid-column: 1 / span 1.5;"
+    }}
     flex: 1;
 `
 
@@ -56,8 +65,8 @@ const Video = (props) => {
     }, []);
 
     return (
-        <InnerGridContainer users={props.users} hide={props.hide} presenting={props.peer.presenting}>
-            <StyledVideo users={props.users} playsInline autoPlay ref={ref} presenting={props.peer.presenting}/>
+        <InnerGridContainer users={props.users} hide={props.hide} presenting={props.peer.presenting} idx={props.idx}>
+            <StyledVideo users={props.users} playsInline ref={ref} presenting={props.peer.presenting} autoPlay="autoPlay"/>
             {!props.peer.video && 
             <UserWithoutCamera users={props.users}>
                 <UserIconContainer>

@@ -12,11 +12,11 @@ import {
     faMicrophoneSlash
 } from '@fortawesome/free-solid-svg-icons';
 
-import CallPageFooter from '../../UI/CallPageFooter/CallPageFooter';
-import Messenger from '../../UI/Messenger/Messenger';
-import Video from '../../Video/Video';
-import { StyledVideo } from '../../Video/Video';
-import {InnerGridContainer} from '../../Video/Video';
+import CallPageFooter from './Footer/CallPageFooter';
+import Messenger from './Messenger/Messenger';
+import Video from './Video/Video';
+import { StyledVideo } from './Video/Video';
+import {InnerGridContainer} from './Video/Video';
 
 
 const shareScreenConstraints = {
@@ -43,10 +43,12 @@ const CallPage = () => {
     const {roomID} = useParams();
     const navigate = useNavigate();
 
+    window.onbeforeunload = function () {
+        leaveRoom();
+    };
     const username = window.sessionStorage.getItem("username");
-    console.log(peers);
-    // if(!socket.current) window.location.reload();
     useEffect(() => {
+        
         if(window.sessionStorage.getItem("logged") !== "success")
             navigate("/");
         socket.current = io("http://localhost:5000/");
@@ -187,6 +189,10 @@ const CallPage = () => {
                     peersRef.current = peersCopy;
                     setPeers(peersCopy);
                 });
+
+                socket.current.on("gata", (message) => {
+                    console.log(message);
+                })
             });
 
             return () => {
@@ -254,7 +260,8 @@ const CallPage = () => {
 
     const leaveRoom = () => {
         userVideoAudio.current.srcObject.getVideoTracks()[0].stop();
-        userVideoAudio.current.srcObject.getAudioTracks()[0].stop();
+        if(userVideoAudio.current.srcObject.getAudioTracks()[0])
+            userVideoAudio.current.srcObject.getAudioTracks()[0].stop();
         socket.current.emit("leave-room", {username, roomID});
         navigate("/home");
     }
@@ -319,10 +326,14 @@ const CallPage = () => {
         return false;
     }
 
+    const isPresenting = (userPresenting, username) => {
+        return (userPresenting && currentPresentation === username) || (!presenting && !checkIfIsPresenting())
+    }
+
     return (
         <RoomContainer>
-            <VideoContainer users={peers.length}>
-                        <InnerGridContainer users={peers.length} hide={(presenting && currentPresentation === username) || (!presenting && !checkIfIsPresenting())} presenting={presenting}>
+            <VideoContainer users={peers.length} layout={presenting || checkIfIsPresenting()}>
+                        <InnerGridContainer users={peers.length} hide={isPresenting(presenting, username)} presenting={presenting} idx={777}>
                             <StyledVideo users={peers.length} muted ref={userVideoAudio} autoPlay playsInline presenting={presenting}/>
                             {!videoSwitch && 
                             <UserWithoutCamera users={peers.length}>
@@ -342,7 +353,8 @@ const CallPage = () => {
                             <Video users={peers.length} 
                                    key={peer.peerId} 
                                    peer={peer} 
-                                   hide={(peer.presenting && currentPresentation === peer.username) || (!presenting && !checkIfIsPresenting())}/>
+                                   hide={isPresenting(peer.presenting, peer.username)}
+                                   idx={idx}/>
                         );
                     })}
             </VideoContainer>
@@ -369,7 +381,8 @@ const CallPage = () => {
                 screenShareSwitch={screenShareSwitch}
                 leaveRoom={leaveRoom}
                 roomId={roomID}
-                socket={socket.current}/>
+                socket={socket.current}
+                presenting={presenting}/>
         </RoomContainer>
     );
 }
@@ -386,24 +399,15 @@ const RoomContainer = styled.div`
 
 const VideoContainer = styled.div`
     height: 100%;
-    grid-template-columns: ${props => {
-        if(props.users === 0)
-            return "repeat(1, 1fr)";
-        else if(props.users === 1)
-            return "repeat(2, 1fr)";
-        else
-            return "repeat(3, 1fr)"
-    }};
-    grid-template-rows: ${props => {
-        if(props.users / 3 === 0)
-            return "repeat(1, 1fr)";
-        else if(props.users / 3 === 2)
-            return "repeat(2, 1fr)";
-        else
-            return "repeat(3, 1fr)"
-    }};
+    ${props => {
+        if(props.layout) {
+            return "display: flex; align-items: center; justify-content: center;";
+        } else {
+            return `display: grid; grid-template-columns: ${props.users === 0 ? 'repeat(1, 1fr);' : props.users === 1 ? 'repeat(2, 1fr);' : 'repeat(3, 1fr);'}
+            grid-template-rows: ${props.users / 3 === 0 ? "repeat(1, 1fr);" : props.users / 3 === 2 ? "repeat(2, 1fr);" : "repeat(3, 1fr);"}`
+        }
+    }}
     width: 100%;
-    display: grid;
 `;
 
 

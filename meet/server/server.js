@@ -49,8 +49,8 @@ const roomHandler = (socket) => {
         socket.emit("users-in-room", users[roomID]);
 
         socket.on('disconnect', (username) => {
+            
             console.log("User left!");
-            console.log(socket.id);
             socket.disconnect();
         });
     };
@@ -184,6 +184,30 @@ const roomHandler = (socket) => {
         }
     }
 
+    const deleteElement = ({element, roomId, username}) => {
+        const index = whiteboardData[roomId].findIndex(elem => elem.id === element.id && elem.username === element.username);
+        if(index !== -1) {
+            whiteboardData[roomId] = whiteboardData[roomId]
+                .filter(elem => (elem.id !== element.id && elem.username === element.username) || elem.username !== element.username)
+                .map(elem => {
+                    if(elem.id > element.id && element.username === elem.username) {
+                        elem.id -= 1;
+                    }
+
+                    return elem;
+                });
+            whiteboardUser[roomId].forEach( user => {
+                if(username !== user.username)
+                    io.to(user.socketId).emit('canvas-data', {elements: whiteboardData[roomId]});
+            });
+        }
+    }
+
+    const bye = (message) => {
+        console.log(message);
+
+    }
+
     socket.on("check-room", checkRoom);
     socket.on("join", joinRoom);
     socket.on("call-user", callUser);
@@ -199,6 +223,9 @@ const roomHandler = (socket) => {
     socket.on("join-whiteboard", joinWhiteboard);
     socket.on("canvas-data", canvasData);
     socket.on("refresh-data", refreshData);
+    socket.on("delete-element", deleteElement);
+
+    socket.on("bye", bye);
 }
 
 io.on('connection', socket => {

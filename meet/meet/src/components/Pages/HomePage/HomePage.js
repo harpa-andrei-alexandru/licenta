@@ -1,6 +1,6 @@
 import React from 'react';
 import './HomePage.scss';
-import Header from '../../UI/Header';
+import Header from '../../Header/Header';
 import {v1 as uuid} from 'uuid';
 
 import { useNavigate } from 'react-router-dom';

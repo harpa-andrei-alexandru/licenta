@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import Header from '../../UI/Header';
-
+import Header from '../../Header/Header';
 import './NoMatch.scss';
 
 const NoMatch = () => {
